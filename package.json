@@ -1,7 +1,7 @@
 {
-  "name": "cog-runner",
+  "name": "crun.cli",
   "version": "1.0.0",
-  "description": "Runs a cog. Connects it to center.",
+  "description": "Runs a cog. Connects it to the central crun server.",
   "main": "index.js",
   "author": "Ashwin Hamal",
   "bin": {
