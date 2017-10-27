@@ -1,22 +1,23 @@
-var path = require('path');
-var fs = require('fs');
-var home;
+let path = require('path');
+let fs = require('fs');
+let home;
 
 if (process.env.CRUN_HOME) {
   home = process.env.CRUN_HOME;
 } else if (process.env.HOME) {
   home = path.resolve(process.env.HOME, '.crun');
 } else {
-  console.warn('Home environment variables not found.')
+  console.warn('Home environment variables not found.');
   home = path.resolve('/etc', '.pm2');
 }
 
-if (!fs.existsSync(home))
+if (!fs.existsSync(home)) {
   fs.mkdirSync(home);
+}
 
-var port = path.resolve(home, 'port');
+let port = path.resolve(home, 'port');
 
-var config = module.exports = {
+let config = module.exports = {
   port: port,
 
   paths: {
@@ -26,8 +27,9 @@ var config = module.exports = {
   },
 
   getCfg: function() {
-    if (!fs.existsSync(this.paths.authFile))
-      return {}
+    if (!fs.existsSync(this.paths.authFile)) {
+      return {};
+    }
     return JSON.parse(
       fs.readFileSync(this.paths.authFile, 'utf8')
     );
@@ -36,4 +38,4 @@ var config = module.exports = {
   saveCfg: function(j, next) {
     fs.writeFile(this.paths.authFile, JSON.stringify(j) , next);
   }
-}
+};

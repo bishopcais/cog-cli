@@ -1,11 +1,11 @@
 "use strict";
-var
+let
   Emitter = require('events').EventEmitter,
   _ = require('lodash'),
   Runner = require('./runner'),
   Connection = require('./connection');
 
-var STAT_REPORT_TIME = 1000;
+let STAT_REPORT_TIME = 1000;
 
 class Beacon {
   constructor() {
@@ -16,9 +16,9 @@ class Beacon {
   }
 
   load(cog, next) {
-    var beacon = this;
+    let beacon = this;
 
-    var e = this.validate(cog);
+    let e = this.validate(cog);
     if (e) return next(e);
 
     beacon.connectCog(cog, (err) => {
@@ -28,8 +28,8 @@ class Beacon {
   }
 
   connectCog(cog, next) {
-    var url = cog.watcher;
-    var connection = this.connections[url];
+    let url = cog.watcher;
+    let connection = this.connections[url];
 
     if (!connection) {
       connection = this.connections[url] = new Connection(url);
@@ -48,7 +48,7 @@ class Beacon {
     if (_.find(this.runners, { cogId: cog.id }))
       return next(`Cog ${cog.id} is already running.`);
 
-    var
+    let
       beacon = this,
       runner = new Runner(cog);
 
@@ -69,50 +69,57 @@ class Beacon {
 
   // Events
   onAction(connection, action) {
-    if (action.cogId)
+    if (action.cogId) {
       var cog = this.cogs[action.cogId];
+    }
 
     // Check for permission.
-    if (cog && this.connections[cog.watcher] !== connection)
+    if (!cog || (cog && this.connections[cog.watcher] !== connection)) {
       return;
+    }
 
-    if (cog && action.action == 'watch') {
-      if (action.watching) this.startWatching(cog);
-      else this.stopWatching(cog);
-
-    } else if (cog && action.action == 'stop') {
+    if (cog && action.action === 'watch') {
+      if (action.watching) {
+        this.startWatching(cog);
+      }
+      else {
+        this.stopWatching(cog);
+      }
+    }
+    else if (cog && action.action === 'stop') {
       cog.runner.stop();
-
-    } else if (cog && action.action == 'run') {
+    }
+    else if (cog && action.action === 'run') {
       cog.runner.run();
-
-    } else if (cog && action.action == 'playback') {
+    }
+    else if (cog && action.action === 'playback') {
       connection.emit('a playback', cog.runner.cache);
     }
   }
 
   onDisconnect(connection) {
     // Stop watcher.
-    var beacon = this;
-    var cogs =_.filter(this.cogs, { connection : connection });
+    let beacon = this;
+    let cogs =_.filter(this.cogs, { connection : connection });
     _.each(cogs, (cog) => { beacon.stopWatching(cog); });
   }
 
   onReconnect(connection) {
-    var cogs =_.filter(this.cogs, { connection : connection });
-    var cogJSONs = _.map(cogs, (cog) => {  return cog.runner.getJSON(); });
+    let cogs =_.filter(this.cogs, { connection : connection });
+    let cogJSONs = _.map(cogs, (cog) => {  return cog.runner.getJSON(); });
     connection.emit('u cogs', cogJSONs);
   }
 
   onRunnerUpdate(cog) {
-    var runner = this.runners[cog.id];
-    var connection = this.connections[cog.watcher];
+    let runner = this.runners[cog.id];
+    let connection = this.connections[cog.watcher];
     connection.emit('u cog', runner.getJSON());
   }
 
   onRunnerStream(cog, type, data) {
-    if (cog.outputToConnection)
-      cog.connection.emit('stream', { cogId: cog.id, data: data.toString(), type: type });
+    if (cog.outputToConnection) {
+      cog.connection.emit('stream', {cogId: cog.id, data: data.toString(), type: type});
+    }
 
     this.emitter.emit(type + ':' + cog.id, data);
     this.emitter.emit(type, data);
@@ -120,9 +127,10 @@ class Beacon {
 
   // Actions
   stop(cogId, cb) {
-    var runner = this.runners[cogId];
-    if (!runner)
+    let runner = this.runners[cogId];
+    if (!runner) {
       return cb('There is no instance loaded with id ' + cogId);
+    }
     runner.stop(cb);
   }
 
@@ -132,11 +140,12 @@ class Beacon {
   }
 
   unload(cogId, cb) {
-    var c = this.runners[cogId].getJSON();
-    var cog = this.cogs[cogId];
+    let c = this.runners[cogId].getJSON();
+    let cog = this.cogs[cogId];
 
-    if (c.status != 'exit')
-      return cb(`Cog hasn't exitted yet. Please close cog first.`);
+    if (c.status !== 'exit') {
+      return cb(`Cog hasn't exited yet. Please close cog first.`);
+    }
 
     cog.connection.emit('r cog', cog.runner.getJSON());
     this.stopWatching(cog);
@@ -150,12 +159,14 @@ class Beacon {
   }
 
   reload(cog, cb) {
-    var
+    let
       beacon = this,
       cogId = cog.id;
 
     beacon.stop(cogId, (err) => {
-      if (err) return cb(err);
+      if (err) {
+        return cb(err);
+      }
       beacon.unload(cogId, (err) => {
         if (err) return cb(err);
         beacon.load(cog, cb);
@@ -165,14 +176,17 @@ class Beacon {
 
   startWatching(cog) {
     cog.outputToConnection = true;
-    if (!cog.intervalId)
+    if (!cog.intervalId) {
       cog.intervalId = setInterval(() => {
         cog.runner.getStat((err, stat) => {
-          if (err) return;
+          if (err) {
+            return;
+          }
           stat.cogId = cog.id;
           cog.connection.emit('stat', stat);
         });
       }, STAT_REPORT_TIME);
+    }
   }
 
   stopWatching(cog) {
@@ -182,18 +196,19 @@ class Beacon {
   }
 
   status(cogId) {
-    var result = '';
-    var r, c;
+    let result = '';
+    let r, c;
 
     if (!cogId) {
-      if (_.isEmpty(this.runners))
-        return 'There are no cogs running.\n'
+      if (_.isEmpty(this.runners)) {
+        return 'There are no cogs running.\n';
+      }
 
       result += 'Cogs\n';
       result += '------------\n';
       for (cogId in this.runners) {
         r = this.runners[cogId].getJSON();
-        result += `${r.id}: ${r.status} ${r.status == 'exit' ? r.exitCode : ''}\n`;
+        result += `${r.id}: ${r.status} ${r.status === 'exit' ? r.exitCode : ''}\n`;
       }
 
       result += '\n\n';
@@ -208,8 +223,9 @@ class Beacon {
     }
     r = this.runners[cogId];
 
-    if (!r)
-      return `There is no cog running with id '${cogId}\n'`
+    if (!r) {
+      return `There is no cog running with id '${cogId}\n'`;
+    }
 
     result += JSON.stringify(r.getJSON(), null, 2);
     return result;
@@ -225,11 +241,13 @@ class Beacon {
   }
 
   validate(cog) {
-    if (!cog.id)
+    if (!cog.id) {
       return 'Cog id not supplied';
+    }
 
-    if (!cog.watcher)
+    if (!cog.watcher) {
       return 'The cog needs a watcher endpoint.';
+    }
   }
 }
 

@@ -1,5 +1,5 @@
 "use strict";
-var
+let
   fs = require('fs'),
   path = require('path'),
   spawn = require('child_process').spawn,
@@ -7,36 +7,40 @@ var
   Emitter = require('events').EventEmitter,
   _ = require('lodash');
 
-var CACHE_LIMIT = 20;
-var STAT_REFRESH_RATE = 2000; // Refresh stat every 5 seconds
+let CACHE_LIMIT = 20;
+let STAT_REFRESH_RATE = 2000; // Refresh stat every 5 seconds
 
 class Runner {
   constructor(cog) {
     this.cog = cog;
     this.cogId = cog.id;
     this.emitter = new Emitter();
-    
+
     this.cache = [];
   }
 
   run(next) {
+    // TODO: Figure out how we can make this a let instead of a var
     var runner = this;
 
-    var child = this.child = spawn(this.cog.run, this.cog.args, {
+    let child = this.child = spawn(this.cog.run, this.cog.args, {
       cwd: this.cog.path,
       env: _.extend({}, process.env, { PWD: this.cog.path })
     });
 
     if (this.cog.log) {
       try {
-        var filePath = path.resolve(runner.cog.path, runner.cog.log);
-        var logStream = fs.createWriteStream(filePath, { flags: 'a' });
-        logStream.on('error', (err) => { console.error(err) });
-      } catch(err) {
+        let filePath = path.resolve(runner.cog.path, runner.cog.log);
+        let logStream = fs.createWriteStream(filePath, { flags: 'a' });
+        logStream.on('error', (err) => {
+          console.error(err)
+        });
+        child.stdout.pipe(logStream);
+        child.stderr.pipe(logStream);
+      }
+      catch(err) {
         return next(err);
       }
-      child.stdout.pipe(logStream);
-      child.stderr.pipe(logStream);
     }
 
     child.stdout.on('data', function(data) {
@@ -67,7 +71,7 @@ class Runner {
 
   stop(next) {
     next = next || (() => {});
-    if (!this.child || this.status == 'exit') {
+    if (!this.child || this.status === 'exit') {
       return next();
     }
     this.child.once('close', next);
@@ -104,22 +108,26 @@ class Runner {
   }
 
   addToCache(type, data) {
-    var cache = this.cache;
+    let cache = this.cache;
     cache.push({
       type: type,
-      data: data.toString() 
+      data: data.toString()
     });
 
-    if (cache.length > CACHE_LIMIT)
+    if (cache.length > CACHE_LIMIT) {
       cache.splice(0, cache.length - CACHE_LIMIT);
+    }
   }
 
   getStat(cb) {
-    if (!this.child || !this.child.pid || this.status !== 'running')
-      return cb(null, { memory: 0, cpu: 0 });
+    if (!this.child || !this.child.pid || this.status !== 'running') {
+      return cb(null, {memory: 0, cpu: 0});
+    }
 
     pidusage.stat(this.child.pid, (err, res) => {
-      if (err) return cb(err);
+      if (err) {
+        return cb(err);
+      }
 
       return cb(null, {
         memory : res.memory,

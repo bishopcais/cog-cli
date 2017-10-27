@@ -1,10 +1,12 @@
-var ifaces = require('os').networkInterfaces();
+let ifaces = require('os').networkInterfaces();
 
-var interfaces = () => {
-  result = [];
+let interfaces = () => {
+  let result = [];
   Object.keys(ifaces).forEach( (ifname) => {
     ifaces[ifname].forEach(function (iface) {
-      if (iface.internal !== false) return;
+      if (iface.internal !== false) {
+        return;
+      }
 
       result.push({
         'address': iface.address,
@@ -16,8 +18,8 @@ var interfaces = () => {
   });
 
   return result;
-}
+};
 
 module.exports = {
   interfaces: interfaces
-}
+};

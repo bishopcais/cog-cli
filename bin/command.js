@@ -1,28 +1,33 @@
 #!/usr/bin/env node
-var
+let
+  fs = require('fs'),
+  os = require('os'),
+  path = require('path'),
   program = require('commander'),
   bridge = require('./bridge'),
-  fs = require('fs'),
-  path = require('path'),
   config = require('../config');
 
-program.version('0.1');
+program.version('0.2');
 
-var loadCogFile = (file, next) => {
-  var fileName = path.resolve(process.cwd(), file || 'cog.json');
+let loadCogFile = (file, next) => {
+  let fileName = path.resolve(process.cwd(), file || 'cog.json');
 
-  if (!fs.existsSync(fileName))
-    return next(`"${(file || 'cog.json')}" - file not found.` );
+  if (!fs.existsSync(fileName)) {
+    return next(`"${(file || 'cog.json')}" - file not found.`);
+  }
 
   try {
-    var cog = JSON.parse(fs.readFileSync(fileName));
+    let cog = JSON.parse(fs.readFileSync(fileName));
     cog.path = cog.path || path.dirname(fileName);
+    if (cog.port && !cog.host) {
+      cog.host = 'http://' + os.hostname();
+    }
     next(null, cog);
-
-  } catch(err) {
+  }
+  catch(err) {
     next('Error loading and parsing cog.json');
   }
-}
+};
 
 program.command('launch')
   .description('Launches daemon.')
@@ -33,7 +38,9 @@ program.command('load [file]')
   .description('Load and run a cog application.')
   .action((file) => {
     loadCogFile(file, (err, cog) => {
-      if (err) return console.error(err)
+      if (err) {
+        return console.error(err);
+      }
       bridge.load(cog);
     });
   });
@@ -42,7 +49,9 @@ program.command('reload [file]')
   .description('Stop, Unload and load cog again.')
   .action((file) => {
     loadCogFile(file, (err, cog) => {
-      if (err) return console.error(err)
+      if (err) {
+        return console.error(err);
+      }
       bridge.reload(cog);
     });
   });
@@ -79,22 +88,31 @@ program.command('config')
   .option('-u, --username [username]', 'Set or get current username')
   .option('-k, --key [key]', 'Set or get current API key')
   .action((options) => {
-    var cfg = config.getCfg();
-    
-    if (options.username === true)
-      return console.log(cfg.username || 'username is not set yet.');
+    let cfg = config.getCfg();
 
-    if (options.key === true)
+    if (options.username === true) {
+      return console.log(cfg.username || 'username is not set yet.');
+    }
+
+    if (options.key === true) {
       return console.log(cfg.key || 'key is not set yet.');
+    }
 
     if (!options.key && !options.username) {
-      for (k in cfg)
-        console.log(`${k}: ${cfg[k]}`)
+      for (let k in cfg) {
+        if (cfg.hasOwnProperty(k)) {
+          console.log(`${k}: ${cfg[k]}`);
+        }
+      }
       return;
     }
 
-    if (options.key) { cfg.key = options.key; }
-    if (options.username) { cfg.username = options.username; }
+    if (options.key) {
+      cfg.key = options.key;
+    }
+    if (options.username) {
+      cfg.username = options.username;
+    }
 
     config.saveCfg(cfg, (err) => {
       if (err) console.log('Error saving config.');
@@ -102,12 +120,12 @@ program.command('config')
     });
   });
 
-program
-  .action(function() {
-    console.log('Invalid option.')
-  });
+program.action(function() {
+  console.log('Invalid option.')
+});
 
 program.parse(process.argv);
 
-if (program.args.length == 0)
-  console.log( program.helpInformation() );
+if (program.args.length === 0) {
+  console.log(program.helpInformation());
+}

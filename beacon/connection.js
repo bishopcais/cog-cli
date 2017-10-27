@@ -1,5 +1,5 @@
-"use strict"
-var
+"use strict";
+let
   Emitter = require('events').EventEmitter,
   _ = require('lodash'),
   config = require('../config'),
@@ -19,7 +19,7 @@ class Connection {
   }
 
   connect(cb) {
-    var
+    let
       c = this,
       exists = !!this.remote;
 
@@ -34,31 +34,31 @@ class Connection {
         })
       });
 
-    var remote = this.remote;
+    let remote = this.remote;
 
-    var onConnect = () => {
+    let onConnect = () => {
       cb();
       clear();
       remote.on('action', c.emitter.emit.bind(c.emitter, 'action') );
       remote.on('disconnect', c.emitter.emit.bind(c.emitter, 'disconnect') );
       remote.on('reconnect', c.emitter.emit.bind(c.emitter, 'reconnect') );
       remote.on('p cogs', c.emitter.emit.bind(c.emitter, 'p cogs') );
-    }
+    };
 
-    var onError = (err) => {
+    let onError = (err) => {
       if (!exists){
         this.remote.destroy();
         this.remote = null;
       }
       clear();
       cb('Connection error - ' + err);
-    }
+    };
 
-    var clear = () => {
+    let clear = () => {
       remote.removeListener('connect', onConnect);
       remote.removeListener('connect_error', onError);
       remote.removeListener('error', onError);
-    }
+    };
 
     remote.on('connect', onConnect);
     remote.on('connect_error', onError);
@@ -73,7 +73,7 @@ class Connection {
   }
 
   getJSON() {
-    var cfg = config.getCfg();
+    let cfg = config.getCfg();
 
     return {
       'user': process.env.USER,

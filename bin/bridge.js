@@ -1,4 +1,4 @@
-var
+let
   net = require('net'),
   fs = require('fs'),
   path = require('path'),
@@ -6,18 +6,20 @@ var
   config = require('../config');
 
 // Launches a daemon.
-var launch = () => {
+let launch = () => {
   // Check if daemon is alreay launched
-  var daemon = connect((err) => {
-    if (err) return launchDaemon();
+  let daemon = connect((err) => {
+    if (err) {
+      return launchDaemon();
+    }
     console.log('Daemon was alreay launched');
     daemon.end();
   });
-}
+};
 
-var launchDaemon = () => {
-  var log = fs.openSync(config.paths.logFile, 'a');
-  var child = spawn(process.execPath || 'node', [
+let launchDaemon = () => {
+  let log = fs.openSync(config.paths.logFile, 'a');
+  let child = spawn(process.execPath || 'node', [
     path.join(path.dirname(fs.realpathSync(__filename)), '../daemon/daemon.js')
   ],{
     cwd: process.cwd(),
@@ -29,33 +31,36 @@ var launchDaemon = () => {
     child.disconnect();
     if (msg.error) {
        console.error(
-        msg.error.code == 'EADDRINUSE' ?
-        'Error: The socket in use. Daemon has probably already launched.' :
-        'Unexpected Error'
-      ); 
-    } else {
-      if (msg.listening)
-        console.log('Daemon has been launched.')
-      else
-        'Unexpected message.';
+         msg.error.code === 'EADDRINUSE' ?
+           'Error: The socket in use. Daemon has probably already launched.' :
+           'Unexpected Error'
+      );
+    }
+    else {
+      if (msg.listening) {
+        console.log('Daemon has been launched.');
+      }
+      else {
+        console.error('Unexpected message.');
+      }
     }
   });
 
   child.unref();
-}
+};
 
-var connect = (cb) => {
-  var daemon = net.connect(config.port, () => {
+let connect = (cb) => {
+  let daemon = net.connect(config.port, () => {
     cb();
   });
   daemon.on('error', () => {
     cb('Error');
   });
   return daemon;
-}
+};
 
-var request = (signal, once) => {
-  var daemon = connect((err) => {
+let request = (signal, once) => {
+  let daemon = connect((err) => {
     if (err) {
       console.error('Daemon needs to be launched. Launch it with: crun launch');
       return;
@@ -66,7 +71,7 @@ var request = (signal, once) => {
 
     daemon.write(JSON.stringify(signal));
   });
-}
+};
 
 module.exports = {
   launch: launch,
@@ -102,4 +107,4 @@ module.exports = {
   quit: () => {
    request({ 'action': 'quit' });
   }
-}
+};
