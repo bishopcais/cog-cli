@@ -1,7 +1,7 @@
 # Cog Runner
 
 Install globally with:
-`sudo npm install -g`
+`sudo npm link`
 
 Start a cog:
 `crun start <cog.json file path>`

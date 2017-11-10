@@ -7,7 +7,7 @@ let
   bridge = require('./bridge'),
   config = require('../config');
 
-program.version('0.2');
+program.version('0.3');
 
 let loadCogFile = (file, next) => {
   let fileName = path.resolve(process.cwd(), file || 'cog.json');

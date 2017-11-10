@@ -66,7 +66,7 @@ let server = net.createServer((socket) => {
       beginStreaming(socket, cogId);
     }
     else if (data.action === 'quit') {
-      socket.end('quitting..\n');
+      socket.end('quitting...\n');
       quitNow();
     }
     else {
