@@ -6,6 +6,8 @@ if (process.env.CRUN_HOME) {
   home = process.env.CRUN_HOME;
 } else if (process.env.HOME) {
   home = path.resolve(process.env.HOME, '.crun');
+} else if (process.env.USERPROFILE) {
+  home = path.resolve(process.env.USERPROFILE, '.crun');
 } else {
   console.warn('Home environment variables not found.');
   home = path.resolve('/etc', '.pm2');
@@ -16,6 +18,11 @@ if (!fs.existsSync(home)) {
 }
 
 let port = path.resolve(home, 'port');
+
+if (process.platform === 'win32') {
+  port = path.join('\\\\?\\pipe', port);
+}
+console.log(port);
 
 let config = module.exports = {
   port: port,
