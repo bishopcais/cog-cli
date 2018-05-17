@@ -22,7 +22,6 @@ let port = path.resolve(home, 'port');
 if (process.platform === 'win32') {
   port = path.join('\\\\?\\pipe', port);
 }
-console.log(port);
 
 let config = module.exports = {
   port: port,
