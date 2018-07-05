@@ -20,7 +20,17 @@ let loadCogFile = (file, next) => {
     let cog = JSON.parse(fs.readFileSync(fileName));
     cog.path = cog.path || path.dirname(fileName);
     if (cog.port && !cog.host) {
-      cog.host = 'http://' + os.hostname();
+      let interfaces = os.networkInterfaces();
+      outer: for (let name in interfaces) {
+        for (let idx = 0; idx < interfaces[name].length; idx++) {
+          let interface = interfaces[name][idx];
+          if (interface['internal']) {
+            continue;
+          }
+          cog.host = 'http://' + interface['address'];
+          break outer;
+        }
+      }
     }
     next(null, cog);
   }
