@@ -2,6 +2,7 @@
 let
   Emitter = require('events').EventEmitter,
   _ = require('lodash'),
+  path = require('path'),
   Runner = require('./runner'),
   Connection = require('./connection');
 
@@ -17,6 +18,11 @@ class Beacon {
 
   load(cog, next) {
     let beacon = this;
+
+    if (!cog) {
+      cog = path.join(process.cwd(), 'cog.json');
+      console.log(`No cog.json file specified, defaulting to trying ${cog}`);
+    }
 
     let e = this.validate(cog);
     if (e) return next(e);
