@@ -20,11 +20,16 @@ let loadCogFile = (file, next) => {
     let cog = JSON.parse(fs.readFileSync(fileName));
     cog.path = cog.path || path.dirname(fileName);
     if (cog.port && !cog.host) {
+      // source: https://stackoverflow.com/a/17871737/4616655
+      let ipv6_regex = new RegExp('(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))');
+
       let interfaces = os.networkInterfaces();
       outer: for (let name in interfaces) {
         for (let idx = 0; idx < interfaces[name].length; idx++) {
           let interface = interfaces[name][idx];
-          if (interface['internal']) {
+          // We don't want to use internal addresses or IPv6 addresses as else 
+          // external hosts will mess up attempting to utilize that host currently
+          if (interface['internal'] || ipv6_regex.test(interface['address'])) {
             continue;
           }
           cog.host = 'http://' + interface['address'];
