@@ -25,7 +25,8 @@ class Runner {
 
     let child = this.child = spawn(this.cog.run, this.cog.args, {
       cwd: this.cog.path,
-      env: _.extend({}, process.env, { PWD: this.cog.path })
+      env: _.extend({}, process.env, { PWD: this.cog.path }),
+      windowsHide: true
     });
 
     if (this.cog.log) {
