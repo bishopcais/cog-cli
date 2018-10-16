@@ -23,15 +23,21 @@ class Runner {
     // TODO: Figure out how we can make this a let instead of a var
     var runner = this;
 
+    let env = _.extend({}, this.cog.env || {}, process.env, { PWD: this.cog.cwd });
+
+    if (this.cog['path+']) {
+      env.PATH = `${this.cog['path+']}:${env.PATH}`;
+    }
+
     let child = this.child = spawn(this.cog.run, this.cog.args, {
-      cwd: this.cog.path,
-      env: _.extend({}, process.env, { PWD: this.cog.path }),
+      cwd: this.cog.cwd,
+      env: env,
       windowsHide: true
     });
 
     if (this.cog.log) {
       try {
-        let filePath = path.resolve(runner.cog.path, runner.cog.log);
+        let filePath = path.resolve(runner.cog.cwd, runner.cog.log);
         let logStream = fs.createWriteStream(filePath, { flags: 'a' });
         logStream.on('error', (err) => {
           console.error(err)
@@ -43,6 +49,14 @@ class Runner {
         return next(err);
       }
     }
+
+    child.on('error', (err) => {
+      // TODO: log this somewhere?
+      runner.addToCache('stderr', 'There was a problem spawning a process for this cog:\n');
+      runner.addToCache('stderr', err + '\n');
+      runner.addToCache('stderr', 'Do not bother trying to run this again until this resolved');
+      runner.emit('stderr', err);
+    });
 
     child.stdout.on('data', function(data) {
       runner.addToCache('stdout', data);
@@ -84,7 +98,7 @@ class Runner {
       'id': this.cog.id,
       'type': this.cog.type,
       'pid': this.pid(),
-      'path': this.cog.path,
+      'cwd': this.cog.cwd,
       'host': this.cog.host,
       'port': this.cog.port,
       'tags': this.cog.tags,
