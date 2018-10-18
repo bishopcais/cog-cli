@@ -45,6 +45,10 @@ let loadCogFile = (file, next) => {
         }
       }
     }
+    // Make sure host starts with http protocol
+    if (cog.host && !cog.host.startsWith('http://') && !cog.host.startsWith('https://')) {
+      cog.host = 'http://' + cog.host;
+    }
     next(null, cog);
   }
   catch(err) {
