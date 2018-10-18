@@ -45,7 +45,7 @@ class Runner {
         child.stdout.pipe(logStream);
         child.stderr.pipe(logStream);
       }
-      catch(err) {
+      catch (err) {
         return next(err);
       }
     }
@@ -145,8 +145,8 @@ class Runner {
       }
 
       return cb(null, {
-        memory : res.memory,
-        cpu    : res.cpu
+        memory: res.memory,
+        cpu: res.cpu
       });
     });
   }

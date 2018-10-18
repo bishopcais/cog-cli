@@ -4,11 +4,14 @@ let home;
 
 if (process.env.CRUN_HOME) {
   home = process.env.CRUN_HOME;
-} else if (process.env.HOME) {
+}
+else if (process.env.HOME) {
   home = path.resolve(process.env.HOME, '.crun');
-} else if (process.env.USERPROFILE) {
+}
+else if (process.env.USERPROFILE) {
   home = path.resolve(process.env.USERPROFILE, '.crun');
-} else {
+}
+else {
   console.warn('Home environment variables not found.');
   home = path.resolve('/etc', '.pm2');
 }
@@ -23,7 +26,7 @@ if (process.platform === 'win32') {
   port = path.join('\\\\?\\pipe', port);
 }
 
-let config = module.exports = {
+module.exports = {
   port: port,
 
   paths: {
@@ -42,6 +45,6 @@ let config = module.exports = {
   },
 
   saveCfg: function(j, next) {
-    fs.writeFile(this.paths.authFile, JSON.stringify(j) , next);
+    fs.writeFile(this.paths.authFile, JSON.stringify(j), next);
   }
 };
