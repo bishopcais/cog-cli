@@ -20,19 +20,27 @@ let loadCogFile = (file, next) => {
     let cog = JSON.parse(fs.readFileSync(fileName));
     cog.cwd = cog.cwd || path.dirname(fileName);
     if (cog.port && !cog.host) {
+      // In case there are no public IP addresses, just default to localhost
+      cog.host = 'http://localhost';
       // source: https://stackoverflow.com/a/17871737/4616655
       let ipv6_regex = new RegExp('(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))');
 
       let interfaces = os.networkInterfaces();
       outer: for (let name in interfaces) {
         for (let idx = 0; idx < interfaces[name].length; idx++) {
-          let interface = interfaces[name][idx];
-          // We don't want to use internal addresses or IPv6 addresses as else
-          // external hosts will mess up attempting to utilize that host currently
-          if (interface['internal'] || ipv6_regex.test(interface['address'])) {
+          let ip = interfaces[name][idx]['address'];
+          // We don't want to use internal addresses or IPv6 addresses
+          if (ipv6_regex.test(ip) || interfaces[name][idx]['internal']) {
             continue;
           }
-          cog.host = 'http://' + interface['address'];
+
+          let parts = ip.split('.');
+          // Disregard "private" IPv4 addresses
+          // https://en.wikipedia.org/wiki/Private_network#Private_IPv4_addresses
+          if (parts[0] === '10' || parts[0] === '192' || (parts[0] === '172' && parseInt(parts[1]) >= 16 && parseInt(parts[1]) <= 31)) {
+            continue;
+          }
+          cog.host = 'http://' + ip;
           break outer;
         }
       }
