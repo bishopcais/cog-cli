@@ -1,9 +1,8 @@
-let
-  net = require('net'),
-  fs = require('fs'),
-  path = require('path'),
-  spawn = require('child_process').spawn,
-  config = require('../config');
+const net = require('net');
+const fs = require('fs');
+const path = require('path');
+const spawn = require('child_process').spawn;
+const config = require('../config');
 
 // Launches a daemon.
 let launch = () => {
@@ -21,7 +20,7 @@ let launchDaemon = () => {
   let log = fs.openSync(config.paths.logFile, 'a');
   let child = spawn(process.execPath || 'node', [
     path.join(path.dirname(fs.realpathSync(__filename)), '../daemon/daemon.js')
-  ],{
+  ], {
     cwd: process.cwd(),
     detached: true,
     stdio: ['ipc', log, log]
@@ -30,11 +29,11 @@ let launchDaemon = () => {
   child.once('message', (msg) => {
     child.disconnect();
     if (msg.error) {
-       console.error(
-         msg.error.code === 'EADDRINUSE' ?
-           'Error: The socket in use. Daemon has probably already launched.' :
-           'Unexpected Error'
-      );
+      let message = 'Unexpected Error';
+      if (msg.error.code === 'EADDRINUSE') {
+        message = 'Error: The socket in use. Daemon has probably already launched.';
+      }
+      console.error(message);
     }
     else {
       if (msg.listening) {
@@ -84,12 +83,12 @@ module.exports = {
     request({ 'action': 'reload', 'cog': cog });
   },
 
-  stop: (id) => {
-    request({ 'action': 'stop', 'id': id });
+  start: (id) => {
+    request({ 'action': 'start', 'id': id });
   },
 
-  run: (id) => {
-    request({ 'action': 'run', 'id': id });
+  stop: (id) => {
+    request({ 'action': 'stop', 'id': id });
   },
 
   unload: (id) => {
@@ -105,6 +104,6 @@ module.exports = {
   },
 
   quit: () => {
-   request({ 'action': 'quit' });
+    request({ 'action': 'quit' });
   }
 };

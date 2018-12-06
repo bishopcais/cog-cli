@@ -20,7 +20,7 @@ let beginStreaming = (socket, id) => {
 };
 
 let quitNow = () => {
-  process.exit()
+  process.exit();
 };
 
 let server = net.createServer((socket) => {
@@ -36,7 +36,7 @@ let server = net.createServer((socket) => {
     }
     else if (data.action === 'load') {
       beacon.load(data.cog, (err) => {
-        socket.end((err || 'Cog started.') + '\n');
+        socket.end(`${data.cog.id} - ${err || 'Cog loaded.'}\n`);
       });
     }
     else if (data.action === 'reload') {
@@ -44,9 +44,9 @@ let server = net.createServer((socket) => {
         socket.end((err || 'Cog reloaded.') + '\n');
       });
     }
-    else if (data.action === 'run') {
-      beacon.run(cogId, (err) => {
-        socket.end((err || 'Cog restarted.') + '\n');
+    else if (data.action === 'start') {
+      beacon.start(cogId, (err) => {
+        socket.end((err || 'Cog started.') + '\n');
       });
     }
     else if (data.action === 'stop') {
@@ -56,7 +56,7 @@ let server = net.createServer((socket) => {
     }
     else if (data.action === 'unload') {
       beacon.unload(cogId, (err) => {
-        socket.end((err || 'Cog removed.') + '\n');
+        socket.end((err || 'Cog unloaded.') + '\n');
       });
     }
     else if (data.action === 'status') {
@@ -66,7 +66,7 @@ let server = net.createServer((socket) => {
       beginStreaming(socket, cogId);
     }
     else if (data.action === 'quit') {
-      socket.end('quitting...\n');
+      socket.end('Quitting Daemon...\n');
       quitNow();
     }
     else {
@@ -86,7 +86,7 @@ server.on('listening', (evt) => {
   if (process.send) {
     process.send({'listening': true});
   }
-  console.log(`${Date()}. Daemon Launched. Listening to ${config.port}`)
+  console.log(`${Date()}. Daemon Launched. Listening to ${config.port}`);
 });
 
 if (fs.existsSync(config.port)) {

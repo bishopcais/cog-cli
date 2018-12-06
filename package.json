@@ -8,10 +8,10 @@
     "crun": "bin/command.js"
   },
   "dependencies": {
-    "async": "^2.0.0-rc.5",
-    "commander": "^2.9.0",
-    "lodash": "^4.17.10",
-    "pidusage": "^1.0.1",
-    "socket.io-client": "^1.4.6"
+    "async": "^2.6.1",
+    "commander": "^2.19.0",
+    "lodash": "^4.17.11",
+    "pidusage": "^2.0.17",
+    "socket.io-client": "^2.2.0"
   }
 }

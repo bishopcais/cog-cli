@@ -1,109 +1,206 @@
 #!/usr/bin/env node
-let
-  fs = require('fs'),
-  os = require('os'),
-  path = require('path'),
-  program = require('commander'),
-  bridge = require('./bridge'),
-  config = require('../config');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
-program.version('0.3');
+let program = require('commander');
+let bridge = require('./bridge');
+let config = require('../config');
+let package_json = require('../package');
 
-let loadCogFile = (file, next) => {
-  let fileName = path.resolve(process.cwd(), file || 'cog.json');
+program.version(package_json.version);
 
-  if (!fs.existsSync(fileName)) {
-    return next(`"${(file || 'cog.json')}" - file not found.`);
+let getIP = () => {
+  let network_interfaces = os.networkInterfaces();
+  for (let name of Object.keys(network_interfaces)) {
+    for (let network_interface of network_interfaces[name]) {
+      if (network_interface.family === 'IPv6' || network_interface.internal) {
+        continue;
+      }
+
+      let parts = network_interface.address.split('.');
+      if (parts[0] === '10' || parts[0] === '192' || (parts[0] === '172' && parseInt(parts[1]) >= 16 && parseInt(parts[1]) <= 31)) {
+        continue;
+      }
+      return network_interface.address;
+    }
+  }
+  return null;
+};
+
+function loadCogFile(file) {
+  let cog;
+  try {
+    cog = JSON.parse(fs.readFileSync(file));
+  }
+  catch (err) {
+    throw new Error(`Error loading and parsing ${file}`);
   }
 
-  try {
-    let cog = JSON.parse(fs.readFileSync(fileName));
-    cog.cwd = cog.cwd || path.dirname(fileName);
-    if (cog.port && !cog.host) {
-      let host = config.getCfg()['host'];
-      if (host) {
-        cog.host = host;
-      }
-      else {
-        // In case there are no public IP addresses, just default to localhost
-        cog.host = 'http://localhost';
-        // source: https://stackoverflow.com/a/17871737/4616655
-        let ipv6_regex = new RegExp('(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))');
+  cog.cwd = cog.cwd || path.dirname(path.resolve(file));
+  if (cog.port && !cog.host) {
+    let host = config.getCfg()['host'];
+    if (host) {
+      cog.host = host;
+    }
+    else {
+      // In case there are no public IP addresses, just default to localhost
+      let ip_address = getIP();
+      cog.host = (ip_address) ? 'http://' + ip_address : 'http://localhost';
+    }
+  }
 
-        let interfaces = os.networkInterfaces();
-        for (let name in interfaces) {
-          for (let idx = 0; idx < interfaces[name].length; idx++) {
-            let ip = interfaces[name][idx]['address'];
-            // We don't want to use internal addresses or IPv6 addresses
-            if (ipv6_regex.test(ip) || interfaces[name][idx]['internal']) {
-              continue;
-            }
+  // Make sure host starts with http protocol
+  let pattern = /^https?:\/\//;
+  if (cog.host && !pattern.test(cog.host)) {
+    cog.host = 'http://' + cog.host;
+  }
+  return cog;
+};
 
-            let parts = ip.split('.');
-            // Disregard "private" IPv4 addresses
-            // https://en.wikipedia.org/wiki/Private_network#Private_IPv4_addresses
-            if (parts[0] === '10' || parts[0] === '192' || (parts[0] === '172' && parseInt(parts[1]) >= 16 && parseInt(parts[1]) <= 31)) {
-              continue;
-            }
-            cog.host = 'http://' + ip;
-            break;
+function getFiles(file, cmd) {
+  let files = [];
+  if (!fs.existsSync(file)) {
+    return console.error(`${file} - file not found`);
+  }
+  if (fs.lstatSync(file).isDirectory()) {
+    if (fs.existsSync(path.join(file, 'cog.json'))) {
+      files.push(path.join(file, 'cog.json'));
+    }
+    else if (cmd.recursive) {
+      let dirs = [file];
+      while (dirs.length > 0) {
+        let dir = dirs.pop();
+        for (let entry of fs.readdirSync(dir, {withFileTypes: true})) {
+          if (!entry.isDirectory()) {
+            continue;
           }
-          if (cog.host) {
-            break;
+          let current = path.join(dir, entry.name);
+          let cog_file = path.join(current, 'cog.json');
+          if (fs.existsSync(cog_file)) {
+            files.push(path.resolve(cog_file));
+          }
+          else {
+            dirs.push(current);
           }
         }
       }
     }
-    // Make sure host starts with http protocol
-    if (cog.host && !cog.host.startsWith('http://') && !cog.host.startsWith('https://')) {
-      cog.host = 'http://' + cog.host;
+  }
+  else {
+    files.push(file);
+  }
+  return files;
+}
+
+function getCogIds(cog_id, cmd) {
+  let cog_ids = [];
+  if (cmd.file) {
+    let files = getFiles(cog_id, cmd);
+    for (let file of files) {
+      try {
+        let cog = loadCogFile(file);
+        cog_ids.push(cog.id);
+      }
+      catch (err) {
+        console.error(err);
+      }
     }
-    next(null, cog);
   }
-  catch (err) {
-    next('Error loading and parsing cog.json');
+  else {
+    cog_ids.push(cog_id);
   }
-};
+  return cog_ids;
+}
 
 program.command('launch')
   .description('Launches daemon.')
   .action(bridge.launch);
 
 program.command('load [file]')
-  .alias('start')
   .description('Load and run a cog application.')
-  .action((file) => {
-    loadCogFile(file, (err, cog) => {
-      if (err) {
-        return console.error(err);
+  .option('-r, --recursive', 'Recursively scan directories for cog.json')
+  .action((file, cmd) => {
+    let files = getFiles(file, cmd);
+
+    if (files.length === 0) {
+      return console.error('No cogs found');
+    }
+
+    for (let file of files) {
+      try {
+        let cog = loadCogFile(file);
+        bridge.load(cog);
       }
-      bridge.load(cog);
-    });
+      catch (err) {
+        console.error(err);
+      }
+    }
   });
 
 program.command('reload [file]')
   .description('Stop, Unload and load cog again.')
-  .action((file) => {
-    loadCogFile(file, (err, cog) => {
-      if (err) {
-        return console.error(err);
+  .option('-r, --recursive', 'Recursively scan directories for cog.json')
+  .action((file, cmd) => {
+    let files = getFiles(file, cmd);
+
+    if (files.length === 0) {
+      return console.error('No cogs found');
+    }
+
+    for (let file of files) {
+      try {
+        let cog = loadCogFile(file);
+        bridge.reload(cog);
       }
-      bridge.reload(cog);
-    });
+      catch (err) {
+        console.error(err);
+      }
+    }
+  });
+
+program.command('start <cog_id>')
+  .description(`Start a stopped cog.`)
+  .option('-f, --file', 'Load cog_id out of passed in file')
+  .option('-r, --recursive', 'Recursively scan directories for cog.json files')
+  .action((cog_id, cmd) => {
+    let cog_ids = getCogIds(cog_id, cmd);
+    if (cog_ids.length === 0) {
+      return console.error('No cogs specified');
+    }
+    for (let cog_id of cog_ids) {
+      bridge.start(cog_id);
+    }
   });
 
 program.command('stop <cog_id>')
   .description('Stop a running cog.')
-  .action(bridge.stop);
-
-program.command('run <cog_id>')
-  .description(`Run a stopped cog.`)
-  .action(bridge.run);
+  .option('-f, --file', 'Load cog_id out of passed in file')
+  .option('-r, --recursive', 'Recursively scan directories for cog.json files')
+  .action((cog_id, cmd) => {
+    let cog_ids = getCogIds(cog_id, cmd);
+    if (cog_ids.length === 0) {
+      return console.error('No cogs specified');
+    }
+    for (let cog_id of cog_ids) {
+      bridge.stop(cog_id);
+    }
+  });
 
 program.command('unload <cog_id>')
+  .option('-f, --file', 'Load cog_id out of passed in file')
+  .option('-r, --recursive', 'Recursively scan directories for cog.json files')
   .alias('remove')
   .description(`Unload a stopped cog.`)
-  .action(bridge.unload);
+  .action((cog_id, cmd) => {
+    let cog_ids = getCogIds(cog_id, cmd);
+    if (cog_ids.length === 0) {
+      return console.error('No cogs specified');
+    }
+    for (let cog_id of cog_ids) {
+      bridge.unload(cog_id);
+    }
+  });
 
 program
   .command('status [cog_id]')
@@ -113,6 +210,18 @@ program
 program.command('output [cog_id]')
   .description(`Listen to stdout/stderr output from all cogs or a specified cog.`)
   .action(bridge.output);
+
+program.command('ip')
+  .description(`Print out the default IP address crun will use.`)
+  .action(() => {
+    let ip = getIP();
+    if (ip) {
+      console.log(ip);
+    }
+    else {
+      console.error('Could not find default IP address.');
+    }
+  });
 
 program.command('quit')
   .description(`Exit daemon, and terminates all of its cogs.`)
@@ -170,7 +279,3 @@ program.action(function() {
 });
 
 program.parse(process.argv);
-
-if (program.args.length === 0) {
-  console.log(program.helpInformation());
-}

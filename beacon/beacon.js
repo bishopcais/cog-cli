@@ -131,6 +131,11 @@ class Beacon {
     this.emitter.emit(type, data);
   }
 
+  start(cogId, cb) {
+    this.runners[cogId].run();
+    cb();
+  }
+
   // Actions
   stop(cogId, cb) {
     let runner = this.runners[cogId];
@@ -138,11 +143,6 @@ class Beacon {
       return cb('There is no instance loaded with id ' + cogId);
     }
     runner.stop(cb);
-  }
-
-  run(cogId, cb) {
-    this.runners[cogId].run();
-    cb();
   }
 
   unload(cogId, cb) {

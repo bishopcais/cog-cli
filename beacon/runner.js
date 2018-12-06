@@ -139,7 +139,7 @@ class Runner {
       return cb(null, {memory: 0, cpu: 0});
     }
 
-    pidusage.stat(this.child.pid, (err, res) => {
+    pidusage(this.child.pid, (err, res) => {
       if (err) {
         return cb(err);
       }
