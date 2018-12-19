@@ -1,7 +1,7 @@
-let path = require('path');
-let fs = require('fs');
-let home;
+const path = require('path');
+const fs = require('fs');
 
+let home;
 if (process.env.CRUN_HOME) {
   home = process.env.CRUN_HOME;
 }
@@ -21,7 +21,6 @@ if (!fs.existsSync(home)) {
 }
 
 let port = path.resolve(home, 'port');
-
 if (process.platform === 'win32') {
   port = path.join('\\\\?\\pipe', port);
 }

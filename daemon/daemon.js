@@ -1,9 +1,9 @@
-let
-  fs = require('fs'),
-  net = require('net'),
-  config = require('../config'),
-  Beacon = require('../beacon/beacon'),
-  beacon = new Beacon;
+const fs = require('fs');
+const net = require('net');
+const config = require('../config');
+const Beacon = require('../beacon/beacon');
+
+let beacon = new Beacon();
 
 
 let beginStreaming = (socket, id) => {
@@ -36,27 +36,27 @@ let server = net.createServer((socket) => {
     }
     else if (data.action === 'load') {
       beacon.load(data.cog, (err) => {
-        socket.end(`${data.cog.id} - ${err || 'Cog loaded.'}\n`);
+        socket.end(`${cogId} - ${err || 'Cog loaded.'}\n`);
       });
     }
     else if (data.action === 'reload') {
       beacon.reload(data.cog, (err) => {
-        socket.end((err || 'Cog reloaded.') + '\n');
+        socket.end(`${cogId} - ${err || 'Cog reloaded.'}\n`);
       });
     }
     else if (data.action === 'start') {
       beacon.start(cogId, (err) => {
-        socket.end((err || 'Cog started.') + '\n');
+        socket.end(`${cogId} - ${err || 'Cog started.'}\n`);
       });
     }
     else if (data.action === 'stop') {
       beacon.stop(cogId, (err) => {
-        socket.end((err || 'Cog stopped.') + '\n');
+        socket.end(`${cogId} - ${err || 'Cog stopped.'}\n`);
       });
     }
     else if (data.action === 'unload') {
       beacon.unload(cogId, (err) => {
-        socket.end((err || 'Cog unloaded.') + '\n');
+        socket.end(`${cogId} - ${err || 'Cog unloaded.'}\n`);
       });
     }
     else if (data.action === 'status') {
@@ -66,7 +66,7 @@ let server = net.createServer((socket) => {
       beginStreaming(socket, cogId);
     }
     else if (data.action === 'quit') {
-      socket.end('Quitting Daemon...\n');
+      socket.end('Quitting crun-cli daemon...\n');
       quitNow();
     }
     else {

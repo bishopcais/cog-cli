@@ -1,15 +1,16 @@
 "use strict";
-let
-  Emitter = require('events').EventEmitter,
-  _ = require('lodash'),
-  config = require('../config'),
-  client = require('socket.io-client'),
-  helpers = require('./helpers'),
-  querystring = require('querystring'),
-  os = require('os');
+const _ = require('lodash');
+const Emitter = require('events').EventEmitter;
+const config = require('../config');
+const client = require('socket.io-client');
+const helpers = require('./helpers');
+const querystring = require('querystring');
+const os = require('os');
 
 class Connection {
   constructor(url) {
+    this.remote = null;
+
     this.url = url;
     this.reportURL = this.url + '/runner';
 
@@ -19,14 +20,11 @@ class Connection {
   }
 
   connect(cb) {
-    let
-      c = this,
-      exists = !!this.remote;
-
-    if (exists && this.remote.connected)
+    if (this.remote && this.remote.connected) {
       return cb();
+    }
 
-    if (!exists)
+    if (!this.remote)
       this.remote = client.connect(this.reportURL, {
         autoConnect: false,
         query: querystring.stringify({
@@ -34,15 +32,13 @@ class Connection {
         })
       });
 
-    let remote = this.remote;
-
     let onConnect = () => {
       cb();
       clear();
-      remote.on('action', c.emitter.emit.bind(c.emitter, 'action') );
-      remote.on('disconnect', c.emitter.emit.bind(c.emitter, 'disconnect') );
-      remote.on('reconnect', c.emitter.emit.bind(c.emitter, 'reconnect') );
-      remote.on('p cogs', c.emitter.emit.bind(c.emitter, 'p cogs') );
+      this.remote.on('action', this.emitter.emit.bind(this.emitter, 'action') );
+      this.remote.on('disconnect', this.emitter.emit.bind(this.emitter, 'disconnect') );
+      this.remote.on('reconnect', this.emitter.emit.bind(this.emitter, 'reconnect') );
+      this.remote.on('p cogs', this.emitter.emit.bind(this.emitter, 'p cogs') );
     };
 
     let onError = (err) => {
@@ -55,21 +51,22 @@ class Connection {
     };
 
     let clear = () => {
-      remote.removeListener('connect', onConnect);
-      remote.removeListener('connect_error', onError);
-      remote.removeListener('error', onError);
+      this.remote.removeListener('connect', onConnect);
+      this.remote.removeListener('connect_error', onError);
+      this.remote.removeListener('error', onError);
     };
 
-    remote.on('connect', onConnect);
-    remote.on('connect_error', onError);
-    remote.on('error', onError);
+    this.remote.on('connect', onConnect);
+    this.remote.on('connect_error', onError);
+    this.remote.on('error', onError);
 
-    remote.connect();
+    this.remote.connect();
   }
 
   emit() {
-    if (this.remote)
+    if (this.remote) {
       this.remote.emit.apply(this.remote, arguments);
+    }
   }
 
   getJSON() {

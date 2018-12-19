@@ -1,14 +1,13 @@
 "use strict";
-let
-  fs = require('fs'),
-  path = require('path'),
-  spawn = require('child_process').spawn,
-  pidusage = require('pidusage'),
-  Emitter = require('events').EventEmitter,
-  _ = require('lodash');
+const fs = require('fs');
+const path = require('path');
+const spawn = require('child_process').spawn;
+const pidusage = require('pidusage');
+const Emitter = require('events').EventEmitter;
+const _ = require('lodash');
 
-let CACHE_LIMIT = 20;
-let STAT_REFRESH_RATE = 2000; // Refresh stat every 5 seconds
+const CACHE_LIMIT = 20;
+const STAT_REFRESH_RATE = 2000; // Refresh stat every 5 seconds
 
 class Runner {
   constructor(cog) {
@@ -20,9 +19,6 @@ class Runner {
   }
 
   run(next) {
-    // TODO: Figure out how we can make this a let instead of a var
-    var runner = this;
-
     let env = _.extend({}, this.cog.env || {}, process.env, { PWD: this.cog.cwd });
 
     if (this.cog['path+']) {
@@ -37,7 +33,7 @@ class Runner {
 
     if (this.cog.log) {
       try {
-        let filePath = path.resolve(runner.cog.cwd, runner.cog.log);
+        let filePath = path.resolve(this.cog.cwd, this.cog.log);
         let logStream = fs.createWriteStream(filePath, { flags: 'a' });
         logStream.on('error', (err) => {
           console.error(err)
@@ -52,32 +48,35 @@ class Runner {
 
     child.on('error', (err) => {
       // TODO: log this somewhere?
-      runner.addToCache('stderr', 'There was a problem spawning a process for this cog:\n');
-      runner.addToCache('stderr', err + '\n');
-      runner.addToCache('stderr', 'Do not bother trying to run this again until this resolved');
-      runner.emit('stderr', err);
+      this.addToCache('stderr', 'There was a problem spawning a process for this cog:\n');
+      this.addToCache('stderr', err + '\n');
+      this.addToCache('stderr', 'Do not bother trying to run this again until this resolved');
+      this.emit('stderr', err);
     });
 
-    child.stdout.on('data', function(data) {
-      runner.addToCache('stdout', data);
-      runner.emit('stdout', data);
+    child.stdout.on('data', (data) => {
+      this.addToCache('stdout', data);
+      this.emit('stdout', data);
     });
 
-    child.stderr.on('data', function(data) {
-      runner.addToCache('stderr', data);
-      runner.emit('stderr', data);
+    child.stderr.on('data', (data) => {
+      this.addToCache('stderr', data);
+      this.emit('stderr', data);
     });
 
-    child.on('close', function(code) {
-      runner.status = 'exit';
-      runner.exitCode = code;
-      runner.emit('close', code);
+    child.on('close', (code) => {
+      this.status = 'exit';
+      this.exitCode = code;
+      this.emit('close', code);
     });
 
-    runner.status = 'running';
-    next && next();
+    this.status = 'running';
 
-    runner.emit('start', this.child.pid);
+    if (next) {
+      next();
+    }
+
+    this.emit('start', this.child.pid);
   }
 
   pid() {

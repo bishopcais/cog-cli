@@ -1,10 +1,10 @@
 "use strict";
-let
-  Emitter = require('events').EventEmitter,
-  _ = require('lodash'),
-  path = require('path'),
-  Runner = require('./runner'),
-  Connection = require('./connection');
+const _ = require('lodash');
+const Emitter = require('events').EventEmitter;
+const path = require('path');
+
+const Runner = require('./runner');
+const Connection = require('./connection');
 
 let STAT_REPORT_TIME = 1000;
 
@@ -17,19 +17,19 @@ class Beacon {
   }
 
   load(cog, next) {
-    let beacon = this;
-
     if (!cog) {
       cog = path.join(process.cwd(), 'cog.json');
       console.log(`No cog.json file specified, defaulting to trying ${cog}`);
     }
 
     let e = this.validate(cog);
-    if (e) return next(e);
+    if (e) {
+      return next(e);
+    }
 
-    beacon.connectCog(cog, (err) => {
+    this.connectCog(cog, (err) => {
       if (err) return next(err);
-      beacon.runCog(cog, next);
+      this.runCog(cog, next);
     });
   }
 
@@ -44,7 +44,10 @@ class Beacon {
       connection.on('reconnect', this.onReconnect.bind(this, connection));
     }
     connection.connect((err) => {
-      if (err) return next(err);
+      if (err) {
+        return next(err);
+      }
+
       cog.connection = connection;
       next();
     });
@@ -54,9 +57,7 @@ class Beacon {
     if (_.find(this.runners, { cogId: cog.id }))
       return next(`Cog ${cog.id} is already running.`);
 
-    let
-      beacon = this,
-      runner = new Runner(cog);
+    let runner = new Runner(cog);
 
     runner.run((err) => {
       next(err);
@@ -66,10 +67,10 @@ class Beacon {
       this.runners[cog.id] = runner;
       cog.runner = runner;
 
-      runner.on('start', beacon.onRunnerUpdate.bind(beacon, cog));
-      runner.on('close', beacon.onRunnerUpdate.bind(beacon, cog));
-      runner.on('stdout', beacon.onRunnerStream.bind(beacon, cog, 'stdout'));
-      runner.on('stderr', beacon.onRunnerStream.bind(beacon, cog, 'stderr'));
+      runner.on('start', this.onRunnerUpdate.bind(this, cog));
+      runner.on('close', this.onRunnerUpdate.bind(this, cog));
+      runner.on('stdout', this.onRunnerStream.bind(this, cog, 'stdout'));
+      runner.on('stderr', this.onRunnerStream.bind(this, cog, 'stderr'));
     });
   }
 
@@ -105,9 +106,8 @@ class Beacon {
 
   onDisconnect(connection) {
     // Stop watcher.
-    let beacon = this;
     let cogs =_.filter(this.cogs, { connection : connection });
-    _.each(cogs, (cog) => { beacon.stopWatching(cog); });
+    _.each(cogs, (cog) => { this.stopWatching(cog); });
   }
 
   onReconnect(connection) {
@@ -165,17 +165,15 @@ class Beacon {
   }
 
   reload(cog, cb) {
-    let
-      beacon = this,
-      cogId = cog.id;
-
-    beacon.stop(cogId, (err) => {
+    this.stop(cog.id, (err) => {
       if (err) {
         return cb(err);
       }
-      beacon.unload(cogId, (err) => {
-        if (err) return cb(err);
-        beacon.load(cog, cb);
+      this.unload(cog.id, (err) => {
+        if (err) {
+          return cb(err);
+        }
+        this.load(cog, cb);
       });
     });
   }
@@ -203,7 +201,6 @@ class Beacon {
 
   status(cogId) {
     let result = '';
-    let r, c;
 
     if (!cogId) {
       if (_.isEmpty(this.runners)) {
@@ -213,7 +210,7 @@ class Beacon {
       result += 'Cogs\n';
       result += '------------\n';
       for (cogId in this.runners) {
-        r = this.runners[cogId].getJSON();
+        let r = this.runners[cogId].getJSON();
         result += `${r.id}: ${r.status} ${r.status === 'exit' ? r.exitCode : ''}\n`;
       }
 
@@ -221,19 +218,18 @@ class Beacon {
       result += 'Connections\n';
       result += '------------\n';
       for (cogId in this.connections) {
-        c = this.connections[cogId];
+        let c = this.connections[cogId];
         result += `${c.url}: ${c.remote && c.remote.connected ? 'connected' : 'disconnected'}\n`;
       }
       result += '\n';
       return result;
     }
-    r = this.runners[cogId];
 
-    if (!r) {
+    if (!this.runners[cogId]) {
       return `There is no cog running with id '${cogId}\n'`;
     }
 
-    result += JSON.stringify(r.getJSON(), null, 2);
+    result += JSON.stringify(this.runners[cogId].getJSON(), null, 2);
     return result;
   }
 

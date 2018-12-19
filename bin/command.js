@@ -5,7 +5,7 @@ const path = require('path');
 
 let program = require('commander');
 let bridge = require('./bridge');
-let config = require('../config');
+const config = require('../config');
 let package_json = require('../package');
 
 program.version(package_json.version);
