@@ -59,118 +59,121 @@ function loadCogFile(file) {
 };
 
 function getFiles(file, cmd) {
-  let files = [];
-  if (!fs.existsSync(file)) {
-    return console.error(`${file} - file not found`);
-  }
-  if (fs.lstatSync(file).isDirectory()) {
-    if (fs.existsSync(path.join(file, 'cog.json'))) {
-      files.push(path.join(file, 'cog.json'));
+  return new Promise((resolve, reject) => {
+    let files = [];
+    if (!fs.existsSync(file)) {
+      reject(`${file} - file not found`);
     }
-    else if (cmd.recursive) {
-      let dirs = [file];
-      while (dirs.length > 0) {
-        let dir = dirs.pop();
-        for (let entry of fs.readdirSync(dir, {withFileTypes: true})) {
-          if (!entry.isDirectory()) {
-            continue;
-          }
-          let current = path.join(dir, entry.name);
-          let cog_file = path.join(current, 'cog.json');
-          if (fs.existsSync(cog_file)) {
-            files.push(path.resolve(cog_file));
-          }
-          else {
-            dirs.push(current);
+    if (fs.lstatSync(file).isDirectory()) {
+      if (fs.existsSync(path.join(file, 'cog.json'))) {
+        files.push(path.join(file, 'cog.json'));
+      }
+      else if (cmd.recursive) {
+        let dirs = [file];
+        while (dirs.length > 0) {
+          let dir = dirs.pop();
+          for (let entry of fs.readdirSync(dir, {withFileTypes: true})) {
+            if (!entry.isDirectory()) {
+              continue;
+            }
+            let current = path.join(dir, entry.name);
+            let cog_file = path.join(current, 'cog.json');
+            if (fs.existsSync(cog_file)) {
+              files.push(path.resolve(cog_file));
+            }
+            else {
+              dirs.push(current);
+            }
           }
         }
       }
     }
-  }
-  else {
-    files.push(file);
-  }
-  return files;
+    else {
+      files.push(file);
+    }
+    resolve(files);
+  });
 }
 
 function getCogIds(cog_id, cmd) {
-  let cog_ids = [];
-  if (cmd.file) {
-    let files = getFiles(cog_id, cmd);
-    for (let file of files) {
-      try {
-        let cog = loadCogFile(file);
-        cog_ids.push(cog.id);
-      }
-      catch (err) {
-        console.error(err);
-      }
+  return new Promise((resolve, reject) => {
+    let cog_ids = [];
+    if (cmd.file) {
+      getFiles(cog_id, cmd).then((files) => {
+        for (let file of files) {
+          try {
+            let cog = loadCogFile(file);
+            cog_ids.push(cog.id);
+          }
+          catch (err) {
+            console.error(err);
+          }
+        }
+      }).catch((err) => {
+        reject(err);
+      });
     }
-  }
-  else {
-    cog_ids.push(cog_id);
-  }
-  return cog_ids;
+    else {
+      cog_ids.push(cog_id);
+    }
+    resolve(cog_ids);
+  });
 }
 
 program.command('launch')
   .description('Launches daemon.')
   .action(bridge.launch);
 
-program.command('load [file]')
-  .description('Load and run a cog application.')
-  .option('-r, --recursive', 'Recursively scan directories for cog.json')
-  .action((file, cmd) => {
-    let files = getFiles(file, cmd);
-
+function runFileFunction(func, file, cmd) {
+  getFiles(file, cmd).then((files) => {
     if (files.length === 0) {
       return console.error('No cogs found');
     }
-
     for (let file of files) {
       try {
         let cog = loadCogFile(file);
-        bridge.load(cog);
+        func(cog);
       }
       catch (err) {
         console.error(err);
       }
     }
+  }).catch((err) => {
+    console.error(err);
+  });
+}
+
+program.command('load [file]')
+  .description('Load and run a cog application.')
+  .option('-r, --recursive', 'Recursively scan directories for cog.json')
+  .action((file, cmd) => {
+    runFileFunction(bridge.load, file, cmd);
   });
 
 program.command('reload [file]')
   .description('Stop, Unload and load cog again.')
   .option('-r, --recursive', 'Recursively scan directories for cog.json')
   .action((file, cmd) => {
-    let files = getFiles(file, cmd);
+    runFileFunction(bridge.reload, file, cmd);
+  });
 
-    if (files.length === 0) {
-      return console.error('No cogs found');
+function runCogFunction(func, cog_id, cmd) {
+  getCogIds(cog_id, cmd).then((cog_ids) => {
+    if (cog_ids.length === 0) {
+      return console.error('No cogs specified');
     }
-
-    for (let file of files) {
-      try {
-        let cog = loadCogFile(file);
-        bridge.reload(cog);
-      }
-      catch (err) {
-        console.error(err);
-      }
+    for (let cog_id of cog_ids) {
+      func(cog_id);
     }
   });
+}
 
 program.command('start <cog_id>')
   .description(`Start a stopped cog.`)
   .option('-f, --file', 'Load cog_id out of passed in file')
   .option('-r, --recursive', 'Recursively scan directories for cog.json files')
   .action((cog_id, cmd) => {
-    let cog_ids = getCogIds(cog_id, cmd);
-    if (cog_ids.length === 0) {
-      return console.error('No cogs specified');
-    }
-    for (let cog_id of cog_ids) {
-      bridge.start(cog_id);
-    }
+    runCogFunction(bridge.start, cog_id, cmd);
   });
 
 program.command('stop <cog_id>')
@@ -178,13 +181,7 @@ program.command('stop <cog_id>')
   .option('-f, --file', 'Load cog_id out of passed in file')
   .option('-r, --recursive', 'Recursively scan directories for cog.json files')
   .action((cog_id, cmd) => {
-    let cog_ids = getCogIds(cog_id, cmd);
-    if (cog_ids.length === 0) {
-      return console.error('No cogs specified');
-    }
-    for (let cog_id of cog_ids) {
-      bridge.stop(cog_id);
-    }
+    runCogFunction(bridge.stop, cog_id, cmd);
   });
 
 program.command('unload <cog_id>')
@@ -193,13 +190,7 @@ program.command('unload <cog_id>')
   .alias('remove')
   .description(`Unload a stopped cog.`)
   .action((cog_id, cmd) => {
-    let cog_ids = getCogIds(cog_id, cmd);
-    if (cog_ids.length === 0) {
-      return console.error('No cogs specified');
-    }
-    for (let cog_id of cog_ids) {
-      bridge.unload(cog_id);
-    }
+    runCogFunction(bridge.unload, cog_id, cmd);
   });
 
 program

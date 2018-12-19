@@ -19,10 +19,6 @@ let beginStreaming = (socket, id) => {
   });
 };
 
-let quitNow = () => {
-  process.exit();
-};
-
 let server = net.createServer((socket) => {
   socket.on('data', (chunk) => {
     let data = JSON.parse(chunk.toString());
@@ -36,12 +32,12 @@ let server = net.createServer((socket) => {
     }
     else if (data.action === 'load') {
       beacon.load(data.cog, (err) => {
-        socket.end(`${cogId} - ${err || 'Cog loaded.'}\n`);
+        socket.end(`${data.cog.id} - ${err || 'Cog loaded.'}\n`);
       });
     }
     else if (data.action === 'reload') {
       beacon.reload(data.cog, (err) => {
-        socket.end(`${cogId} - ${err || 'Cog reloaded.'}\n`);
+        socket.end(`${data.cog.id} - ${err || 'Cog reloaded.'}\n`);
       });
     }
     else if (data.action === 'start') {
@@ -66,8 +62,15 @@ let server = net.createServer((socket) => {
       beginStreaming(socket, cogId);
     }
     else if (data.action === 'quit') {
-      socket.end('Quitting crun-cli daemon...\n');
-      quitNow();
+      let cog_ids = [];
+      let message = "Quitting crun-cli daemon...\n";
+      for (cogId in beacon.runners) {
+        beacon.runners[cogId].stop();
+        cog_ids.push(cogId);
+        message += `Stopping ${cogId}.\n`;
+      }
+      socket.end(message);
+      process.exit();
     }
     else {
       socket.end('Invalid action.\n');
