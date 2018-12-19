@@ -2,9 +2,9 @@ const fs = require('fs');
 const net = require('net');
 const config = require('../config');
 const Beacon = require('../beacon/beacon');
+const util = require('../util');
 
 let beacon = new Beacon();
-
 
 let beginStreaming = (socket, id) => {
   let i = id ? ':' + id : '';
@@ -18,6 +18,16 @@ let beginStreaming = (socket, id) => {
     beacon.removeListener('stderr' + i, fn);
   });
 };
+
+const quitDaemon = async function(beacon) {
+  let message = '';
+  for (cogId in beacon.runners) {
+    beacon.runners[cogId].stop();
+    await util.sleep(util.cog_sleep);
+    message += `Stopping ${cogId}.\n`;
+  }
+  return message;
+}
 
 let server = net.createServer((socket) => {
   socket.on('data', (chunk) => {
@@ -62,15 +72,12 @@ let server = net.createServer((socket) => {
       beginStreaming(socket, cogId);
     }
     else if (data.action === 'quit') {
-      let cog_ids = [];
-      let message = "Quitting crun-cli daemon...\n";
-      for (cogId in beacon.runners) {
-        beacon.runners[cogId].stop();
-        cog_ids.push(cogId);
-        message += `Stopping ${cogId}.\n`;
-      }
-      socket.end(message);
-      process.exit();
+      quitDaemon(beacon).then((msg) => {
+        socket.end(`Quitting crun-cli daemon...\n${msg}`);
+        process.exit();
+      }).catch((err) => {
+        socket.end(err);
+      });
     }
     else {
       socket.end('Invalid action.\n');

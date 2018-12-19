@@ -2,11 +2,12 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const util = require('../util');
 
 let program = require('commander');
 let bridge = require('./bridge');
 const config = require('../config');
-let package_json = require('../package');
+const package_json = require('../package');
 
 program.version(package_json.version);
 
@@ -58,74 +59,74 @@ function loadCogFile(file) {
   return cog;
 };
 
-function getFiles(file, cmd) {
-  return new Promise((resolve, reject) => {
-    let files = [];
-    if (!fs.existsSync(file)) {
-      reject(`${file} - file not found`);
+const getFiles = async function(file, cmd) {
+  let files = [];
+  if (!fs.existsSync(file)) {
+    throw new Error(`${file} - file not found`);
+  }
+  if (fs.lstatSync(file).isDirectory()) {
+    if (fs.existsSync(path.join(file, 'cog.json'))) {
+      files.push(path.join(file, 'cog.json'));
     }
-    if (fs.lstatSync(file).isDirectory()) {
-      if (fs.existsSync(path.join(file, 'cog.json'))) {
-        files.push(path.join(file, 'cog.json'));
-      }
-      else if (cmd.recursive) {
-        let dirs = [file];
-        while (dirs.length > 0) {
-          let dir = dirs.pop();
-          for (let entry of fs.readdirSync(dir, {withFileTypes: true})) {
-            if (!entry.isDirectory()) {
-              continue;
-            }
-            let current = path.join(dir, entry.name);
-            let cog_file = path.join(current, 'cog.json');
-            if (fs.existsSync(cog_file)) {
-              files.push(path.resolve(cog_file));
-            }
-            else {
-              dirs.push(current);
-            }
+    else if (cmd.recursive) {
+      let dirs = [file];
+      while (dirs.length > 0) {
+        let dir = dirs.pop();
+        for (let entry of fs.readdirSync(dir, {withFileTypes: true})) {
+          if (!entry.isDirectory()) {
+            continue;
+          }
+          let current = path.join(dir, entry.name);
+          let cog_file = path.join(current, 'cog.json');
+          if (fs.existsSync(cog_file)) {
+            files.push(path.resolve(cog_file));
+          }
+          else {
+            dirs.push(current);
           }
         }
       }
     }
-    else {
-      files.push(file);
-    }
-    resolve(files);
-  });
+  }
+  else {
+    files.push(file);
+  }
+  return files;
 }
 
-function getCogIds(cog_id, cmd) {
-  return new Promise((resolve, reject) => {
-    let cog_ids = [];
-    if (cmd.file) {
-      getFiles(cog_id, cmd).then((files) => {
-        for (let file of files) {
-          try {
-            let cog = loadCogFile(file);
-            cog_ids.push(cog.id);
-          }
-          catch (err) {
-            console.error(err);
-          }
-        }
-      }).catch((err) => {
-        reject(err);
-      });
+const getCogIds = async function(cog_id, cmd) {
+  let cog_ids = [];
+  if (cmd.file) {
+    let files;
+    try {
+      files = await getFiles(cog_id, cmd);
     }
-    else {
-      cog_ids.push(cog_id);
+    catch (err) {
+      throw err;
     }
-    resolve(cog_ids);
-  });
+    for (let file of files) {
+      try {
+        let cog = loadCogFile(file);
+        cog_ids.push(cog.id);
+      }
+      catch (err) {
+        console.error(err);
+      }
+    }
+  }
+  else {
+    cog_ids.push(cog_id);
+  }
+  return cog_ids;
 }
 
 program.command('launch')
   .description('Launches daemon.')
   .action(bridge.launch);
 
-function runFileFunction(func, file, cmd) {
-  getFiles(file, cmd).then((files) => {
+const runFileFunction = async function(func, file, cmd) {
+  try {
+    let files = await getFiles(file, cmd);
     if (files.length === 0) {
       return console.error('No cogs found');
     }
@@ -133,14 +134,16 @@ function runFileFunction(func, file, cmd) {
       try {
         let cog = loadCogFile(file);
         func(cog);
+        await util.sleep(util.cog_sleep);
       }
       catch (err) {
         console.error(err);
       }
     }
-  }).catch((err) => {
+  }
+  catch (err) {
     console.error(err);
-  });
+  }
 }
 
 program.command('load [file]')
@@ -157,15 +160,25 @@ program.command('reload [file]')
     runFileFunction(bridge.reload, file, cmd);
   });
 
-function runCogFunction(func, cog_id, cmd) {
-  getCogIds(cog_id, cmd).then((cog_ids) => {
+const runCogFunction = async function(func, cog_id, cmd) {
+  try {
+    let cog_ids = await getCogIds(cog_id, cmd);
     if (cog_ids.length === 0) {
       return console.error('No cogs specified');
     }
     for (let cog_id of cog_ids) {
-      func(cog_id);
+      try {
+        func(cog_id);
+        await util.sleep(util.cog_sleep);
+      }
+      catch (err) {
+        console.error(err);
+      }
     }
-  });
+  }
+  catch (err) {
+    console.error(err);
+  }
 }
 
 program.command('start <cog_id>')

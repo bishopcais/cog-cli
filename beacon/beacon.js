@@ -117,9 +117,7 @@ class Beacon {
   }
 
   onRunnerUpdate(cog) {
-    let runner = this.runners[cog.id];
-    let connection = this.connections[cog.watcher];
-    connection.emit('u cog', runner.getJSON());
+    this.connections[cog.watcher].emit('u cog', this.runners[cog.id].getJSON());
   }
 
   onRunnerStream(cog, type, data) {
