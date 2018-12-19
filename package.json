@@ -2,8 +2,16 @@
   "name": "crun.cli",
   "version": "1.0.0",
   "description": "Runs a cog. Connects it to the central crun server.",
-  "main": "index.js",
-  "author": "Ashwin Hamal",
+  "contributors": [
+    {
+      "name": "Ashwin Hamal"
+    },
+    {
+      "name": "Matthew Peveler",
+      "email": "matt.peveler@gmail.com"
+    }
+  ],
+  "license": "MIT",
   "bin": {
     "crun": "bin/command.js"
   },
@@ -13,5 +21,13 @@
     "lodash": "^4.17.11",
     "pidusage": "^2.0.17",
     "socket.io-client": "^2.2.0"
-  }
+  },
+  "engines": {
+    "node": ">=10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://internal.cisl.rpi.edu/code/cir-core/crun-cli"
+  },
+  "private": true
 }
