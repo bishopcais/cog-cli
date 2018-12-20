@@ -5,45 +5,45 @@ monitor their status without having to create a bunch of terminal windows for ea
 also, if you specify a `watcher` in your cog.json will communicate with the Cog Server (`crun-server`)
 which allows you to then control and monitor the cogs remotely via your web browser.
 
+## Installation
+```
+git clone https://github.com/CognitiveHorizons/cisl-crun-cli crun-cli
+cd crun-cli
+npm link
+```
+(the final command may require `sudo` depending on configuration of OS)
+
 ## Usage
-### Install globally with:
-`npm link`
+```
+$ crun --help
+Usage: crun [options] [command]
 
-### Start Cog Runner
-`crun launch`
+Options:
+  -V, --version                     output the version number
+  -h, --help                        output usage information
 
-### Configure crun-server key
-`crun config -u <username> -k <key>`
-
-Note: The username and key are configured within crun-server.
-
-### Start a cog:
-`crun start <cog.json file path>`
-`crun load <cog.json file path>`
-
-Note: If you leave out the cog.json argument, `crun-cli` will look in the current
-directory for a `cog.json` and if it's found, load that.
-
-### Stop a cog:
-`crun stop <cog_id>`
-
-### List all cogs:
-`crun list`
-
-### Kill cog daemon:
-`crun kill`
-
-### Monitor cog stdout:
-`crun stdout <cog_id>`
-
-
-### Quit Cog Runner
-`crun quit`
+Commands:
+  launch                            Launches daemon.
+  load [options] [file]             Load and run a cog application.
+  reload [options] [file]           Stop, Unload and load cog again.
+  start [options] <cog_id>          Start a stopped cog.
+  stop [options] <cog_id>           Stop a running cog.
+  unload|remove [options] <cog_id>  Unload a stopped cog.
+  status [cog_id]                   Show status of all cogs, or details of specified cog.
+  output [cog_id]                   Listen to stdout/stderr output from all cogs or a specified cog.
+  ip                                Print out the default IP address crun will use.
+  quit                              Exit daemon, and terminates all of its cogs.
+  config [options]                  Show configuration. 'crun config --h' to learn more
+```
 
 ## cog.json
+crun-cli utilizes a cog.json file to specify the various settings that a cog should use when
+loaded.
+ 
 Note: If you leave out the `host` key but specify a `port`, `crun-cli` will automatically fill
 in the `host` value for you using the first non-internal IPv4 address it finds via the 
-[os.networkInterfaces](https://nodejs.org/api/os.html#os_os_networkinterfaces) function.
+[os.networkInterfaces](https://nodejs.org/api/os.html#os_os_networkinterfaces) function. You can
+use the `crun ip` command to see what that IP address will be.
 ```
 {
   "run": "node",
