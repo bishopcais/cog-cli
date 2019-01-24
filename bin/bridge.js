@@ -64,6 +64,7 @@ let request = (signal, once) => {
       console.error('Daemon needs to be launched. Launch it with: crun launch');
       return;
     }
+
     daemon.on('data', (data) => {
       process.stdout.write(data.toString('utf8'));
     });

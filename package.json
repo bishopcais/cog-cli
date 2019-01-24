@@ -1,11 +1,9 @@
 {
   "name": "crun.cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Runs a cog. Connects it to the central crun server.",
+  "author": "Ashwin Hamal",
   "contributors": [
-    {
-      "name": "Ashwin Hamal"
-    },
     {
       "name": "Matthew Peveler",
       "email": "matt.peveler@gmail.com"
@@ -29,5 +27,7 @@
     "type": "git",
     "url": "https://internal.cisl.rpi.edu/code/cir-core/crun-cli"
   },
-  "private": true
+  "publishConfig": {
+    "registry": "https://internal.cisl.rpi.edu/npm/"
+  }
 }

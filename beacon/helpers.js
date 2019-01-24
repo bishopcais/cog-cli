@@ -2,8 +2,8 @@ let ifaces = require('os').networkInterfaces();
 
 let interfaces = () => {
   let result = [];
-  Object.keys(ifaces).forEach( (ifname) => {
-    ifaces[ifname].forEach(function (iface) {
+  Object.keys(ifaces).forEach((ifname) => {
+    ifaces[ifname].forEach((iface) => {
       if (iface.internal !== false) {
         return;
       }

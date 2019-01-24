@@ -11,7 +11,7 @@ const package_json = require('../package');
 
 program.version(package_json.version);
 
-let getIP = () => {
+function getIP() {
   let network_interfaces = os.networkInterfaces();
   for (let name of Object.keys(network_interfaces)) {
     for (let network_interface of network_interfaces[name]) {
@@ -27,7 +27,7 @@ let getIP = () => {
     }
   }
   return null;
-};
+}
 
 function loadCogFile(file) {
   let cog;
@@ -39,6 +39,8 @@ function loadCogFile(file) {
   }
 
   cog.cwd = cog.cwd || path.dirname(path.resolve(file));
+
+  // Resolve host if not set
   if (cog.port && !cog.host) {
     let host = config.getCfg()['host'];
     if (host) {
@@ -56,10 +58,14 @@ function loadCogFile(file) {
   if (cog.host && !pattern.test(cog.host)) {
     cog.host = 'http://' + cog.host;
   }
-  return cog;
-};
 
-const getFiles = async function(file, cmd) {
+  // Set default watcher URL
+  cog.watcher = cog.watcher || 'http://localhost:7777';
+
+  return cog;
+}
+
+async function getFiles(file, cmd) {
   let files = [];
   if (!fs.existsSync(file)) {
     throw new Error(`${file} - file not found`);
@@ -94,7 +100,7 @@ const getFiles = async function(file, cmd) {
   return files;
 }
 
-const getCogIds = async function(cog_id, cmd) {
+async function getCogIds(cog_id, cmd) {
   let cog_ids = [];
   if (cmd.file) {
     let files;
@@ -124,7 +130,10 @@ program.command('launch')
   .description('Launches daemon.')
   .action(bridge.launch);
 
-const runFileFunction = async function(func, file, cmd) {
+async function runFileFunction(func, file, cmd) {
+  if (!file) {
+    file = 'cog.json';
+  }
   try {
     let files = await getFiles(file, cmd);
     if (files.length === 0) {
@@ -134,6 +143,8 @@ const runFileFunction = async function(func, file, cmd) {
       try {
         let cog = loadCogFile(file);
         func(cog);
+        // Brief sleep to let previous cog finish loading
+        // before moving onto the next one
         await util.sleep(util.cog_sleep);
       }
       catch (err) {
@@ -160,7 +171,7 @@ program.command('reload [file]')
     runFileFunction(bridge.reload, file, cmd);
   });
 
-const runCogFunction = async function(func, cog_id, cmd) {
+async function runCogFunction(func, cog_id, cmd) {
   try {
     let cog_ids = await getCogIds(cog_id, cmd);
     if (cog_ids.length === 0) {
@@ -273,12 +284,16 @@ program.command('config')
     }
 
     config.saveCfg(cfg, (err) => {
-      if (err) console.log('Error saving config.');
-      else console.log('Config updated.');
+      if (err) {
+        console.log('Error saving config.');
+      }
+      else {
+        console.log('Config updated.');
+      }
     });
   });
 
-program.action(function() {
+program.action(() => {
   console.log('Invalid option.');
 });
 

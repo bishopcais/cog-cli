@@ -1,5 +1,5 @@
-"use strict";
-const _ = require('lodash');
+'use strict';
+
 const Emitter = require('events').EventEmitter;
 const config = require('../config');
 const client = require('socket.io-client');
@@ -24,29 +24,30 @@ class Connection {
       return cb();
     }
 
-    if (!this.remote)
+    if (!this.remote) {
       this.remote = client.connect(this.reportURL, {
         autoConnect: false,
         query: querystring.stringify({
           info: JSON.stringify(this.getJSON())
         })
       });
+    }
 
     let onConnect = () => {
       cb();
       clear();
-      this.remote.on('action', this.emitter.emit.bind(this.emitter, 'action') );
-      this.remote.on('disconnect', this.emitter.emit.bind(this.emitter, 'disconnect') );
-      this.remote.on('reconnect', this.emitter.emit.bind(this.emitter, 'reconnect') );
-      this.remote.on('p cogs', this.emitter.emit.bind(this.emitter, 'p cogs') );
+      this.remote.on('action', this.emitter.emit.bind(this.emitter, 'action'));
+      this.remote.on('disconnect', this.emitter.emit.bind(this.emitter, 'disconnect'));
+      this.remote.on('reconnect', this.emitter.emit.bind(this.emitter, 'reconnect'));
+      this.remote.on('p cogs', this.emitter.emit.bind(this.emitter, 'p cogs'));
     };
 
     let onError = (err) => {
-      if (!exists){
+      clear();
+      if (!this.remote.connected) {
         this.remote.destroy();
         this.remote = null;
       }
-      clear();
       cb('Connection error - ' + err);
     };
 
@@ -83,7 +84,7 @@ class Connection {
       'cpus': os.cpus(),
       'memory': os.totalmem(),
       'hostname': os.hostname()
-    }
+    };
   }
 
   destroy() {

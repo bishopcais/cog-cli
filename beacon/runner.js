@@ -1,4 +1,5 @@
-"use strict";
+'use strict';
+
 const fs = require('fs');
 const path = require('path');
 const spawn = require('child_process').spawn;
@@ -6,8 +7,7 @@ const pidusage = require('pidusage');
 const Emitter = require('events').EventEmitter;
 const _ = require('lodash');
 
-const CACHE_LIMIT = 20;
-const STAT_REFRESH_RATE = 2000; // Refresh stat every 5 seconds
+const CACHE_LIMIT = 30;
 
 class Runner {
   constructor(cog) {
@@ -36,7 +36,7 @@ class Runner {
         let filePath = path.resolve(this.cog.cwd, this.cog.log);
         let logStream = fs.createWriteStream(filePath, { flags: 'a' });
         logStream.on('error', (err) => {
-          console.error(err)
+          console.error(err);
         });
         child.stdout.pipe(logStream);
         child.stderr.pipe(logStream);
@@ -106,7 +106,7 @@ class Runner {
       'status': this.status,
       'exitCode': this.exitCode,
       'args': this.cog.args
-    }
+    };
   }
 
   on() {

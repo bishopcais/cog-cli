@@ -19,9 +19,9 @@ let beginStreaming = (socket, id) => {
   });
 };
 
-const quitDaemon = async function(beacon) {
+async function quitDaemon(beacon) {
   let message = '';
-  for (cogId in beacon.runners) {
+  for (let cogId in beacon.runners) {
     beacon.runners[cogId].stop();
     await util.sleep(util.cog_sleep);
     message += `Stopping ${cogId}.\n`;

@@ -40,11 +40,8 @@ Commands:
 crun-cli utilizes a cog.json file to specify the various settings that a cog should use when
 loaded.
  
-Note: If you leave out the `host` key but specify a `port`, `crun-cli` will automatically fill
-in the `host` value for you using the first non-internal IPv4 address it finds via the 
-[os.networkInterfaces](https://nodejs.org/api/os.html#os_os_networkinterfaces) function. You can
-use the `crun ip` command to see what that IP address will be.
-```
+An example cog.json file is shown below:
+```json
 {
   "run": "node",
   "args": [ "child.js" ],
@@ -58,3 +55,9 @@ use the `crun ip` command to see what that IP address will be.
   "port": "8888"
 }
 ```
+Note: If you leave out the `host` key but specify a `port`, `crun-cli` will automatically fill
+in the `host` value for you using the first non-internal IPv4 address it finds via the 
+[os.networkInterfaces](https://nodejs.org/api/os.html#os_os_networkinterfaces) function. You can
+use the `crun ip` command to see what that IP address will be.
+
+Note: If `watcher` is omitted, it defaults to `http://localhost:7777`.

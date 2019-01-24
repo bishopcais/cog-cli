@@ -1,7 +1,7 @@
-"use strict";
+'use strict';
+
 const _ = require('lodash');
 const Emitter = require('events').EventEmitter;
-const path = require('path');
 
 const Runner = require('./runner');
 const Connection = require('./connection');
@@ -17,18 +17,15 @@ class Beacon {
   }
 
   load(cog, next) {
-    if (!cog) {
-      cog = path.join(process.cwd(), 'cog.json');
-      console.log(`No cog.json file specified, defaulting to trying ${cog}`);
-    }
-
     let e = this.validate(cog);
     if (e) {
       return next(e);
     }
 
     this.connectCog(cog, (err) => {
-      if (err) return next(err);
+      if (err) {
+        return next(err);
+      }
       this.runCog(cog, next);
     });
   }
@@ -54,8 +51,9 @@ class Beacon {
   }
 
   runCog(cog, next) {
-    if (_.find(this.runners, { cogId: cog.id }))
+    if (_.find(this.runners, { cogId: cog.id })) {
       return next(`Cog ${cog.id} is already running.`);
+    }
 
     let runner = new Runner(cog);
 
@@ -76,16 +74,17 @@ class Beacon {
 
   // Events
   onAction(connection, action) {
-    if (action.cogId) {
-      var cog = this.cogs[action.cogId];
+    if (!action.cogId) {
+      return;
     }
+    let cog = this.cogs[action.cogId];
 
     // Check for permission.
-    if (!cog || (cog && this.connections[cog.watcher] !== connection)) {
+    if (this.connections[cog.watcher] !== connection) {
       return;
     }
 
-    if (cog && action.action === 'watch') {
+    if (action.action === 'watch') {
       if (action.watching) {
         this.startWatching(cog);
       }
@@ -93,26 +92,26 @@ class Beacon {
         this.stopWatching(cog);
       }
     }
-    else if (cog && action.action === 'stop') {
+    else if (action.action === 'stop') {
       cog.runner.stop();
     }
-    else if (cog && action.action === 'run') {
+    else if (action.action === 'run') {
       cog.runner.run();
     }
-    else if (cog && action.action === 'playback') {
+    else if (action.action === 'playback') {
       connection.emit('a playback', cog.runner.cache);
     }
   }
 
   onDisconnect(connection) {
     // Stop watcher.
-    let cogs =_.filter(this.cogs, { connection : connection });
+    let cogs = _.filter(this.cogs, { connection: connection });
     _.each(cogs, (cog) => { this.stopWatching(cog); });
   }
 
   onReconnect(connection) {
-    let cogs =_.filter(this.cogs, { connection : connection });
-    let cogJSONs = _.map(cogs, (cog) => {  return cog.runner.getJSON(); });
+    let cogs = _.filter(this.cogs, { connection: connection });
+    let cogJSONs = _.map(cogs, (cog) => { return cog.runner.getJSON(); });
     connection.emit('u cogs', cogJSONs);
   }
 
