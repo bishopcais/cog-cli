@@ -6,4 +6,4 @@ module.exports.cog_sleep = 250;
 
 module.exports.sleep = (milliseconds) => {
   return new Promise(resolve => setTimeout(resolve, milliseconds));
-}
+};
