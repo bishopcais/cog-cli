@@ -78,11 +78,11 @@ async function getFiles(file, cmd) {
       let dirs = [file];
       while (dirs.length > 0) {
         let dir = dirs.pop();
-        for (let entry of fs.readdirSync(dir, {withFileTypes: true})) {
-          if (!entry.isDirectory()) {
+        for (let entry of fs.readdirSync(dir)) {
+          let current = path.join(dir, entry);
+          if (!fs.lstatSync(entry).isDirectory()) {
             continue;
           }
-          let current = path.join(dir, entry.name);
           let cog_file = path.join(current, 'cog.json');
           if (fs.existsSync(cog_file)) {
             files.push(path.resolve(cog_file));
