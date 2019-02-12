@@ -28,7 +28,8 @@ class Runner {
     let child = this.child = spawn(this.cog.run, this.cog.args, {
       cwd: this.cog.cwd,
       env: env,
-      windowsHide: true
+      windowsHide: true,
+      shell: process.platform === 'win32'
     });
 
     if (this.cog.log) {
