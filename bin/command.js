@@ -102,7 +102,7 @@ async function getFiles(file, cmd) {
 
 async function getCogIds(cog_id, cmd) {
   let cog_ids = [];
-  if (cmd.file) {
+  if (cmd.file || cmd.recursive) {
     let files;
     try {
       files = await getFiles(cog_id, cmd);
