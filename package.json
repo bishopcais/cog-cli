@@ -1,6 +1,6 @@
 {
   "name": "@cisl/crun-cli",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Runs a cog. Connects it to the central crun server.",
   "author": "Ashwin Hamal",
   "contributors": [

@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.2
+* Use shell=True for spawning commands on Windows
+
 ## v1.0.1
 * Published to internal CISL NPM
 * Fix bug when trying to load cog with crun-server not being reachable
