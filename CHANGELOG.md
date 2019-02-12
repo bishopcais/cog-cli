@@ -2,6 +2,7 @@
 
 ## v1.0.2
 * Use shell=True for spawning commands on Windows
+* Only require `-r` and not both `-r` and `-f`.
 
 ## v1.0.1
 * Published to internal CISL NPM
