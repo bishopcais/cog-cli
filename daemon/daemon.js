@@ -19,14 +19,20 @@ let beginStreaming = (socket, id) => {
   });
 };
 
-async function quitDaemon(beacon) {
+async function quitDaemon() {
   let message = '';
   for (let cogId in beacon.runners) {
     beacon.runners[cogId].stop();
     await util.sleep(util.cog_sleep);
-    message += `Stopping ${cogId}.\n`;
+    message += `Stopping and unloading ${cogId}.\n`;
   }
+  fs.writeFileSync('/tmp/test.log', message);
   return message;
+}
+
+function killDaemon() {
+  quitDaemon();
+  process.exit();
 }
 
 let server = net.createServer((socket) => {
@@ -72,7 +78,7 @@ let server = net.createServer((socket) => {
       beginStreaming(socket, cogId);
     }
     else if (data.action === 'quit') {
-      quitDaemon(beacon).then((msg) => {
+      quitDaemon().then((msg) => {
         socket.end(`Quitting crun-cli daemon...\n${msg}`);
         process.exit();
       }).catch((err) => {
@@ -98,6 +104,10 @@ server.on('listening', (evt) => {
   }
   console.log(`${Date()}. Daemon Launched. Listening to ${config.port}`);
 });
+
+process.on('SIGINT', () => killDaemon());
+process.on('SIGTERM', () => killDaemon());
+process.on('uncaughtException', () => killDaemon());
 
 if (fs.existsSync(config.port)) {
   fs.unlinkSync(config.port);

@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.3
+* Kill attached children if crun is terminated (will still leave children if receives SIGKILL).
+
 ## v1.0.2
 * Use shell=True for spawning commands on Windows
 * Only require `-r` and not both `-r` and `-f`.
