@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.0
+* If the cog.json does not specify a run command, check if there exists a package.json and then
+    assume it is using node and the script under "main" in package.json.
+
 ## v1.0.3
 * Kill attached children if crun is terminated (will still leave children if receives SIGKILL).
 

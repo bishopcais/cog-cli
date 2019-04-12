@@ -62,6 +62,17 @@ function loadCogFile(file) {
   // Set default watcher URL
   cog.watcher = cog.watcher || 'http://localhost:7777';
 
+  if (!cog.run) {
+    if (fs.existsSync(path.resolve(cog.cwd, 'package.json'))) {
+      let package_json = JSON.parse(
+        fs.readFileSync(path.resolve(cog.cwd, 'package.json'), {encoding: 'utf-8'})
+      );
+      if (package_json.main) {
+        cog.run = 'node';
+        cog.args = [package_json.main];
+      }
+    }
+  }
   return cog;
 }
 
