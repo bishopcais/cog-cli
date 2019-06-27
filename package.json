@@ -1,6 +1,6 @@
 {
   "name": "@cisl/crun-cli",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Runs a cog. Connects it to the central crun server.",
   "author": "Ashwin Hamal",
   "contributors": [
@@ -14,14 +14,13 @@
     "crun": "bin/command.js"
   },
   "dependencies": {
-    "async": "^2.6.1",
-    "commander": "^2.19.0",
+    "commander": "^2.20.0",
     "lodash": "^4.17.11",
     "pidusage": "^2.0.17",
     "socket.io-client": "^2.2.0"
   },
   "engines": {
-    "node": ">=10"
+    "node": ">=8"
   },
   "repository": {
     "type": "git",

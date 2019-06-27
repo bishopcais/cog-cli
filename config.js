@@ -34,6 +34,8 @@ module.exports = {
     authFile: path.resolve(home, 'auth.json')
   },
 
+  allowedOptions: ['username', 'key', 'host'],
+
   getCfg: function() {
     if (!fs.existsSync(this.paths.authFile)) {
       return {};

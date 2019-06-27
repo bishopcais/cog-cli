@@ -81,6 +81,9 @@ async function getFiles(file, cmd) {
   if (!fs.existsSync(file)) {
     throw new Error(`${file} - file not found`);
   }
+  if (fs.lstatSync(file).isSymbolicLink()) {
+    file = fs.readlinkSync(file);
+  }
   if (fs.lstatSync(file).isDirectory()) {
     if (fs.existsSync(path.join(file, 'cog.json'))) {
       files.push(path.join(file, 'cog.json'));
@@ -113,6 +116,9 @@ async function getFiles(file, cmd) {
 
 async function getCogIds(cog_id, cmd) {
   let cog_ids = [];
+  if (fs.existsSync(cog_id)) {
+    cmd.file = true;
+  }
   if (cmd.file || cmd.recursive) {
     let files;
     try {
@@ -203,25 +209,22 @@ async function runCogFunction(func, cog_id, cmd) {
   }
 }
 
-program.command('start <cog_id>')
+program.command('start <cog_id|path>')
   .description(`Start a stopped cog.`)
-  .option('-f, --file', 'Load cog_id out of passed in file')
-  .option('-r, --recursive', 'Recursively scan directories for cog.json files')
+  .option('-r, --recursive', 'Recursively scan path if directory for cog.json files')
   .action((cog_id, cmd) => {
     runCogFunction(bridge.start, cog_id, cmd);
   });
 
-program.command('stop <cog_id>')
+program.command('stop <cog_id|pathh>')
   .description('Stop a running cog.')
-  .option('-f, --file', 'Load cog_id out of passed in file')
-  .option('-r, --recursive', 'Recursively scan directories for cog.json files')
+  .option('-r, --recursive', 'Recursively scan path if directory for cog.json files')
   .action((cog_id, cmd) => {
     runCogFunction(bridge.stop, cog_id, cmd);
   });
 
-program.command('unload <cog_id>')
-  .option('-f, --file', 'Load cog_id out of passed in file')
-  .option('-r, --recursive', 'Recursively scan directories for cog.json files')
+program.command('unload <cog_id|path>')
+  .option('-r, --recursive', 'Recursively scan path if directory for cog.json files')
   .alias('remove')
   .description(`Unload a stopped cog.`)
   .action((cog_id, cmd) => {
@@ -253,50 +256,46 @@ program.command('quit')
   .description(`Exit daemon, and terminates all of its cogs.`)
   .action(bridge.quit);
 
-program.command('config')
-  .description(`Show configuration. 'crun config --h' to learn more`)
-  .option('-u, --username [username]', 'Set or get current username')
-  .option('-k, --key [key]', 'Set or get current API key')
-  .option('-h, --host [host]', 'Set a default host to use, otherwise will attempt to determine it')
-  .action((options) => {
+program.command('config [variable] [value]')
+  .description(`Show or set config variable.`)
+  .option('-d, --delete', 'Unset the value for config variable')
+  .action((variable, value, options) => {
     let cfg = config.getCfg();
 
-    if (options.username === true) {
-      return console.log(cfg.username || 'username is not set yet.');
+    if (options.delete === true && !variable) {
+      console.error('must pass variable to delete');
+      return;
     }
-
-    if (options.key === true) {
-      return console.log(cfg.key || 'key is not set yet.');
+    else if (options.delete === true) {
+      delete cfg[variable];
     }
-
-    if (options.host === true) {
-      return console.log(cfg.host || 'host is not set yet');
-    }
-
-    if (!options.key && !options.username && !options.host) {
-      for (let k in cfg) {
-        if (cfg.hasOwnProperty(k)) {
-          console.log(`${k}: ${cfg[k]}`);
-        }
+    else if (!variable) {
+      for (let option of config.allowedOptions) {
+        console.log(`${option.padEnd(8)}   ${cfg[option] || ''}`);
       }
       return;
     }
-
-    if (options.key) {
-      cfg.key = options.key;
+    else if (variable && !value) {
+      if (config.allowedOptions.includes(variable)) {
+        console.log(`${variable.padEnd(8)}   ${cfg[variable]}`);
+        return;
+      }
+      else {
+        return console.error(`Invalid config variable: ${variable}`);
+      }
     }
-
-    if (options.username) {
-      cfg.username = options.username;
+    else {
+      if (config.allowedOptions.includes(variable)) {
+        cfg[variable] = value;
+      }
+      else {
+        console.error(`Invalid config variable: ${variable}`);
+        return;
+      }
     }
-
-    if (options.host) {
-      cfg.host = options.host;
-    }
-
     config.saveCfg(cfg, (err) => {
       if (err) {
-        console.log('Error saving config.');
+        console.error('Error saving config');
       }
       else {
         console.log('Config updated.');

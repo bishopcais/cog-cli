@@ -1,6 +1,7 @@
 MIT License
 
-Copyright (c) 2018 CISL & IBM
+Copyright (c) 2018 IBM
+Copyright (c) 2019 CISL
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
