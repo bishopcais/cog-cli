@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.2.1
+* Fix not following symbolic link when using the recursive flag
+
 ## v1.2.0
 * When given a symlink, crun will attempt to follow/use it
 * Lower required Node engine to 8 from 10

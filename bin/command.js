@@ -94,6 +94,9 @@ async function getFiles(file, cmd) {
         let dir = dirs.pop();
         for (let entry of fs.readdirSync(dir)) {
           let current = path.join(dir, entry);
+          if (fs.lstatSync(current).isSymbolicLink()) {
+            current = fs.readlinkSync(current);
+          }
           if (!fs.lstatSync(current).isDirectory()) {
             continue;
           }
