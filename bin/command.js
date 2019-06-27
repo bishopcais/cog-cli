@@ -81,9 +81,7 @@ async function getFiles(file, cmd) {
   if (!fs.existsSync(file)) {
     throw new Error(`${file} - file not found`);
   }
-  if (fs.lstatSync(file).isSymbolicLink()) {
-    file = fs.readlinkSync(file);
-  }
+  file = fs.realpathSync(file);
   if (fs.lstatSync(file).isDirectory()) {
     if (fs.existsSync(path.join(file, 'cog.json'))) {
       files.push(path.join(file, 'cog.json'));
@@ -93,10 +91,7 @@ async function getFiles(file, cmd) {
       while (dirs.length > 0) {
         let dir = dirs.pop();
         for (let entry of fs.readdirSync(dir)) {
-          let current = path.join(dir, entry);
-          if (fs.lstatSync(current).isSymbolicLink()) {
-            current = fs.readlinkSync(current);
-          }
+          let current = fs.realpathSync(path.join(dir, entry));
           if (!fs.lstatSync(current).isDirectory()) {
             continue;
           }

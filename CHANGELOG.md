@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.2.2
+* Use fs.realpathSync to follow symlinks instead of fs.readlinkSync to better resolve
+    relative paths
+
 ## v1.2.1
 * Fix not following symbolic link when using the recursive flag
 
