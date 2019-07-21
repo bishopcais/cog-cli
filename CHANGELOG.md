@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.3.0
+* Add ability to send arbitrary signals to processes
+* Update dependencies
+
 ## v1.2.2
 * Use fs.realpathSync to follow symlinks instead of fs.readlinkSync to better resolve
     relative paths

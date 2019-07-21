@@ -84,7 +84,9 @@ class Beacon {
       return;
     }
 
-    if (action.action === 'watch') {
+    let action_name = action.action.toLowerCase();
+
+    if (action_name === 'watch') {
       if (action.watching) {
         this.startWatching(cog);
       }
@@ -92,14 +94,17 @@ class Beacon {
         this.stopWatching(cog);
       }
     }
-    else if (action.action === 'stop') {
+    else if (action_name === 'stop') {
       cog.runner.stop();
     }
-    else if (action.action === 'run') {
+    else if (action_name === 'run') {
       cog.runner.run();
     }
-    else if (action.action === 'playback') {
+    else if (action_name === 'playback') {
       connection.emit('a playback', cog.runner.cache);
+    }
+    else {
+      cog.runner.sendSignal(action_name.toUpperCase());
     }
   }
 

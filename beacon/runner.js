@@ -93,6 +93,14 @@ class Runner {
     this.child.kill();
   }
 
+  sendSignal(signal, next) {
+    next = next || (() => {});
+    if (!this.child || this.status === 'exit') {
+      return next();
+    }
+    this.child.kill(signal);
+  }
+
   getJSON() {
     return {
       'id': this.cog.id,
