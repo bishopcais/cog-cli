@@ -26,7 +26,6 @@ async function quitDaemon() {
     await util.sleep(util.cog_sleep);
     message += `Stopping and unloading ${cogId}.\n`;
   }
-  fs.writeFileSync('/tmp/test.log', message);
   return message;
 }
 
