@@ -1,7 +1,7 @@
 'use strict';
 
 const _ = require('lodash');
-const Emitter = require('events').EventEmitter;
+import { EventEmitter } from 'events';
 
 const Runner = require('./runner');
 const Connection = require('./connection');
@@ -9,8 +9,10 @@ const Connection = require('./connection');
 let STAT_REPORT_TIME = 1000;
 
 class Beacon {
+  emitter: EventEmitter;
+
   constructor() {
-    this.emitter = new Emitter();
+    this.emitter = new EventEmitter();
     this.runners = {};
     this.connections = {};
     this.cogs = {};
@@ -101,7 +103,7 @@ class Beacon {
       cog.runner.run();
     }
     else if (action_name === 'playback') {
-      connection.emit('a playback', cog.runner.cache);
+      connection.remoteEmit('a playback', cog.runner.cache);
     }
     else {
       cog.runner.sendSignal(action_name.toUpperCase());
@@ -117,16 +119,16 @@ class Beacon {
   onReconnect(connection) {
     let cogs = _.filter(this.cogs, { connection: connection });
     let cogJSONs = _.map(cogs, (cog) => { return cog.runner.getJSON(); });
-    connection.emit('u cogs', cogJSONs);
+    connection.remoteEmit('u cogs', cogJSONs);
   }
 
   onRunnerUpdate(cog) {
-    this.connections[cog.watcher].emit('u cog', this.runners[cog.id].getJSON());
+    this.connections[cog.watcher].remoteEmit('u cog', this.runners[cog.id].getJSON());
   }
 
   onRunnerStream(cog, type, data) {
     if (cog.outputToConnection) {
-      cog.connection.emit('stream', {cogId: cog.id, data: data.toString(), type: type});
+      cog.connection.remoteEmit('stream', {cogId: cog.id, data: data.toString(), type: type});
     }
 
     this.emitter.emit(type + ':' + cog.id, data);
@@ -155,7 +157,7 @@ class Beacon {
       return cb(`Cog hasn't exited yet. Please close cog first.`);
     }
 
-    cog.connection.emit('r cog', cog.runner.getJSON());
+    cog.connection.remoteEmit('r cog', cog.runner.getJSON());
     this.stopWatching(cog);
 
     // remove runner
@@ -189,7 +191,7 @@ class Beacon {
             return;
           }
           stat.cogId = cog.id;
-          cog.connection.emit('stat', stat);
+          cog.connection.remoteEmit('stat', stat);
         });
       }, STAT_REPORT_TIME);
     }

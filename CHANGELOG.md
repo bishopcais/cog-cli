@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.4.0
+* Renamed project to `cog-cli` and added new `cog` entry point (`crun` remains as well for BC).
+* Add `ping` beacon command to do check if daemon is running before doing running load, unload, etc.
+
 ## v1.3.0
 * Add ability to send arbitrary signals to processes
 * Update dependencies

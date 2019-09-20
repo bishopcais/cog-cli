@@ -1,24 +1,36 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const spawn = require('child_process').spawn;
-const pidusage = require('pidusage');
-const Emitter = require('events').EventEmitter;
-const _ = require('lodash');
+import fs from 'fs';
+import path from 'path';
+import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
+import pidusage from 'pidusage';
+import { EventEmitter } from 'events';
+import _ from 'lodash';
+import Cog from '../cog';
 
 const CACHE_LIMIT = 30;
 
 class Runner {
-  constructor(cog) {
+  cog: Cog;
+  cogId: string;
+  emitter: EventEmitter;
+  cache: {type: string, data: string}[];
+  child?: ChildProcessWithoutNullStreams;
+  status: 'running' | 'exit';
+  exitCode: number;
+
+  constructor(cog: Cog) {
     this.cog = cog;
     this.cogId = cog.id;
-    this.emitter = new Emitter();
+    this.emitter = new EventEmitter();
 
     this.cache = [];
+
+    this.status = 'exit';
+    this.exitCode = 0;
   }
 
-  run(next) {
+  run(next: (err?: string) => void): void {
     let env = _.extend({}, this.cog.env || {}, process.env, { PWD: this.cog.cwd });
 
     if (this.cog['path+']) {
@@ -80,11 +92,11 @@ class Runner {
     this.emit('start', this.child.pid);
   }
 
-  pid() {
-    return this.child.pid;
+  pid(): number {
+    return (this.child) ? this.child.pid: -1;
   }
 
-  stop(next) {
+  stop(next?: () => void): void {
     next = next || (() => {});
     if (!this.child || this.status === 'exit') {
       return next();
@@ -93,7 +105,7 @@ class Runner {
     this.child.kill();
   }
 
-  sendSignal(signal, next) {
+  sendSignal(signal: string, next?: () => void): void {
     next = next || (() => {});
     if (!this.child || this.status === 'exit') {
       return next();
@@ -118,31 +130,26 @@ class Runner {
     };
   }
 
-  on() {
-    this.emitter.on.apply(this.emitter, arguments);
+  on(type: string, listener: (...args: any[]) => void) {
+    this.emitter.on(type, listener);
   }
 
-  emit() {
-    this.emitter.emit.apply(this.emitter, arguments);
+  emit(type: string, ...data: any[]) {
+    this.emitter.emit(type, data);
   }
 
-  removeListener() {
-    this.emitter.removeListener.apply(this.emitter, arguments);
-  }
-
-  addToCache(type, data) {
-    let cache = this.cache;
-    cache.push({
+  addToCache(type: string, data: string | Buffer) {
+    this.cache.push({
       type: type,
       data: data.toString()
     });
 
-    if (cache.length > CACHE_LIMIT) {
-      cache.splice(0, cache.length - CACHE_LIMIT);
+    if (this.cache.length > CACHE_LIMIT) {
+      this.cache.splice(0, this.cache.length - CACHE_LIMIT);
     }
   }
 
-  getStat(cb) {
+  getStat(cb: (err: Error | null, stat?: {memory: number, cpu: number}) => void) {
     if (!this.child || !this.child.pid || this.status !== 'running') {
       return cb(null, {memory: 0, cpu: 0});
     }

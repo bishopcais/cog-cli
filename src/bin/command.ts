@@ -1,15 +1,15 @@
 #!/usr/bin/env node
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const util = require('../util');
+import fs = require('fs');
+import os = require('os');
+import path = require('path');
+import { sleep } from '../util';
 
-let program = require('commander');
-let bridge = require('./bridge');
-const config = require('../config');
-const package_json = require('../package');
+import program from 'commander';
+import bridge = require('./bridge');
+import config = require('../config');
+import package_json = require('../../package.json');
 
-program.version(package_json.version);
+program.version(package_json.version, '-v, --version');
 
 function getIP() {
   let network_interfaces = os.networkInterfaces();
@@ -29,16 +29,23 @@ function getIP() {
   return null;
 }
 
-function loadCogFile(file) {
+function loadCogFile(file: string) {
   let cog;
   try {
-    cog = JSON.parse(fs.readFileSync(file));
+    cog = JSON.parse(fs.readFileSync(file, {encoding: 'utf8'}));
   }
   catch (err) {
     throw new Error(`Error loading and parsing ${file}`);
   }
 
   cog.cwd = cog.cwd || path.dirname(path.resolve(file));
+
+  // Legacy allowed port to be defined as string, make sure it is an integer
+  if (cog.port) {
+    if (typeof cog.port === 'string') {
+      cog.port = parseInt(cog.port);
+    }
+  }
 
   // Resolve host if not set
   if (cog.port && !cog.host) {
@@ -76,7 +83,7 @@ function loadCogFile(file) {
   return cog;
 }
 
-async function getFiles(file, cmd) {
+async function getFiles(file: string, cmd: program.Command) {
   let files = [];
   if (!fs.existsSync(file)) {
     throw new Error(`${file} - file not found`);
@@ -90,6 +97,9 @@ async function getFiles(file, cmd) {
       let dirs = [file];
       while (dirs.length > 0) {
         let dir = dirs.pop();
+        if (!dir) {
+          break;
+        }
         for (let entry of fs.readdirSync(dir)) {
           let current = fs.realpathSync(path.join(dir, entry));
           if (!fs.lstatSync(current).isDirectory()) {
@@ -112,7 +122,7 @@ async function getFiles(file, cmd) {
   return files;
 }
 
-async function getCogIds(cog_id, cmd) {
+async function getCogIds(cog_id: string, cmd: program.Command) {
   let cog_ids = [];
   if (fs.existsSync(cog_id)) {
     cmd.file = true;
@@ -145,79 +155,89 @@ program.command('launch')
   .description('Launches daemon.')
   .action(bridge.launch);
 
-async function runFileFunction(func, file, cmd) {
-  if (!file) {
-    file = 'cog.json';
-  }
-  try {
-    let files = await getFiles(file, cmd);
-    if (files.length === 0) {
-      return console.error('No cogs found');
+async function runFileFunction(func: Function, file: string, cmd: program.Command) {
+  bridge.ping(async (connected) => {
+    if (!connected) {
+      return;
     }
-    for (let file of files) {
-      try {
-        let cog = loadCogFile(file);
-        func(cog);
-        // Brief sleep to let previous cog finish loading
-        // before moving onto the next one
-        await util.sleep(util.cog_sleep);
+    if (!file) {
+      file = 'cog.json';
+    }
+    try {
+      let files = await getFiles(file, cmd);
+      if (files.length === 0) {
+        return console.error('No cogs found');
       }
-      catch (err) {
-        console.error(err);
+      for (let file of files) {
+        try {
+          let cog = loadCogFile(file);
+          func(cog);
+          // Brief sleep to let previous cog finish loading
+          // before moving onto the next one
+          await sleep();
+        }
+        catch (err) {
+          console.error(err);
+        }
       }
     }
-  }
-  catch (err) {
-    console.error(err);
-  }
+    catch (err) {
+      console.error(err);
+    }
+  });
 }
 
 program.command('load [file]')
   .description('Load and run a cog application.')
   .option('-r, --recursive', 'Recursively scan directories for cog.json')
-  .action((file, cmd) => {
+  .action((file: string, cmd: program.Command) => {
     runFileFunction(bridge.load, file, cmd);
   });
 
 program.command('reload [file]')
-  .description('Stop, Unload and load cog again.')
+  .description('Stop, unload and load cog again.')
   .option('-r, --recursive', 'Recursively scan directories for cog.json')
-  .action((file, cmd) => {
+  .action((file: string, cmd: program.Command) => {
     runFileFunction(bridge.reload, file, cmd);
   });
 
-async function runCogFunction(func, cog_id, cmd) {
-  try {
-    let cog_ids = await getCogIds(cog_id, cmd);
-    if (cog_ids.length === 0) {
-      return console.error('No cogs specified');
+async function runCogFunction(func: Function, cog_id: string, cmd: program.Command) {
+  bridge.ping(async (connected) => {
+    if (!connected) {
+      return;
     }
-    for (let cog_id of cog_ids) {
-      try {
-        func(cog_id);
-        await util.sleep(util.cog_sleep);
+    try {
+      let cog_ids = await getCogIds(cog_id, cmd);
+      if (cog_ids.length === 0) {
+        return console.error('No cogs specified');
       }
-      catch (err) {
-        console.error(err);
+      for (let cog_id of cog_ids) {
+        try {
+          func(cog_id);
+          await sleep();
+        }
+        catch (err) {
+          console.error(err);
+        }
       }
     }
-  }
-  catch (err) {
-    console.error(err);
-  }
+    catch (err) {
+      console.error(err);
+    }
+  });
 }
 
 program.command('start <cog_id|path>')
   .description(`Start a stopped cog.`)
   .option('-r, --recursive', 'Recursively scan path if directory for cog.json files')
-  .action((cog_id, cmd) => {
+  .action((cog_id: string, cmd: program.Command) => {
     runCogFunction(bridge.start, cog_id, cmd);
   });
 
 program.command('stop <cog_id|pathh>')
   .description('Stop a running cog.')
   .option('-r, --recursive', 'Recursively scan path if directory for cog.json files')
-  .action((cog_id, cmd) => {
+  .action((cog_id: string, cmd: program.Command) => {
     runCogFunction(bridge.stop, cog_id, cmd);
   });
 
@@ -225,7 +245,7 @@ program.command('unload <cog_id|path>')
   .option('-r, --recursive', 'Recursively scan path if directory for cog.json files')
   .alias('remove')
   .description(`Unload a stopped cog.`)
-  .action((cog_id, cmd) => {
+  .action((cog_id: string, cmd: program.Command) => {
     runCogFunction(bridge.unload, cog_id, cmd);
   });
 
@@ -239,7 +259,7 @@ program.command('output [cog_id]')
   .action(bridge.output);
 
 program.command('ip')
-  .description(`Print out the default IP address crun will use.`)
+  .description(`Print out the default IP address cog-cli will use.`)
   .action(() => {
     let ip = getIP();
     if (ip) {
@@ -257,14 +277,14 @@ program.command('quit')
 program.command('config [variable] [value]')
   .description(`Show or set config variable.`)
   .option('-d, --delete', 'Unset the value for config variable')
-  .action((variable, value, options) => {
+  .action((variable: string | null, value: string | null, cmd: program.Command) => {
     let cfg = config.getCfg();
 
-    if (options.delete === true && !variable) {
+    if (cmd.delete === true && !variable) {
       console.error('must pass variable to delete');
       return;
     }
-    else if (options.delete === true) {
+    else if (cmd.delete === true && variable) {
       delete cfg[variable];
     }
     else if (!variable) {

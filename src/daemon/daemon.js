@@ -23,7 +23,7 @@ async function quitDaemon() {
   let message = '';
   for (let cogId in beacon.runners) {
     beacon.runners[cogId].stop();
-    await util.sleep(util.cog_sleep);
+    await util.sleep(util.COMMAND_SLEEP);
     message += `Stopping and unloading ${cogId}.\n`;
   }
   return message;
@@ -76,9 +76,12 @@ let server = net.createServer((socket) => {
     else if (data.action === 'output') {
       beginStreaming(socket, cogId);
     }
+    else if (data.action === 'ping') {
+      socket.end(`pong`);
+    }
     else if (data.action === 'quit') {
       quitDaemon().then((msg) => {
-        socket.end(`Quitting crun-cli daemon...\n${msg}`);
+        socket.end(`Quitting cog-cli daemon...\n${msg}`);
         process.exit();
       }).catch((err) => {
         socket.end(err);

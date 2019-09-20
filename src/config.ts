@@ -1,15 +1,15 @@
-const path = require('path');
-const fs = require('fs');
+import path = require('path');
+import fs = require('fs');
 
 let home;
-if (process.env.CRUN_HOME) {
-  home = process.env.CRUN_HOME;
+if (process.env.COG_HOME) {
+  home = process.env.COG_HOME;
 }
 else if (process.env.HOME) {
-  home = path.resolve(process.env.HOME, '.crun');
+  home = path.resolve(process.env.HOME, '.cog');
 }
 else if (process.env.USERPROFILE) {
-  home = path.resolve(process.env.USERPROFILE, '.crun');
+  home = path.resolve(process.env.USERPROFILE, '.cog');
 }
 else {
   console.warn('Home environment variables not found.');
@@ -25,12 +25,12 @@ if (process.platform === 'win32') {
   port = path.join('\\\\?\\pipe', port);
 }
 
-module.exports = {
+export = {
   port: port,
 
   paths: {
     home: home,
-    logFile: path.resolve(home, 'crun.log'),
+    logFile: path.resolve(home, 'cog.log'),
     authFile: path.resolve(home, 'auth.json')
   },
 
@@ -45,7 +45,7 @@ module.exports = {
     );
   },
 
-  saveCfg: function(j, next) {
-    fs.writeFile(this.paths.authFile, JSON.stringify(j), next);
+  saveCfg: function(json: object, callback: (err: NodeJS.ErrnoException | null) => void) {
+    fs.writeFile(this.paths.authFile, JSON.stringify(json), callback);
   }
 };
