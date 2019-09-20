@@ -18,7 +18,7 @@
     "test": "jest --verbose",
     "build": "tsc",
     "watch": "tsc -w",
-    "lint": "eslint src/*"
+    "lint": "eslint src/**/*.ts"
   },
   "engines": {
     "node": ">=8"

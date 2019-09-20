@@ -8,7 +8,7 @@ const Connection = require('./connection');
 
 let STAT_REPORT_TIME = 1000;
 
-class Beacon {
+export default class Beacon {
   emitter: EventEmitter;
 
   constructor() {
@@ -238,12 +238,12 @@ class Beacon {
   }
 
   // Interfaces
-  on() {
-    this.emitter.on.apply(this.emitter, arguments);
+  on(type: string, listener: (...args: any[]) => void) {
+    this.emitter.on(type, listener);
   }
 
-  removeListener() {
-    this.emitter.removeListener.apply(this.emitter, arguments);
+  removeListener(type: string, listener: (...args: any[]) => void) {
+    this.emitter.removeListener(type, listener);
   }
 
   validate(cog) {
@@ -256,5 +256,3 @@ class Beacon {
     }
   }
 }
-
-module.exports = Beacon;

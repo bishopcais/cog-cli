@@ -1,8 +1,8 @@
-const fs = require('fs');
-const net = require('net');
-const config = require('../config');
-const Beacon = require('../beacon/beacon');
-const util = require('../util');
+import fs = require('fs');
+import net = require('net');
+import config from '../config';
+import Beacon from '../beacon/beacon';
+import { sleep } from '../util';
 
 let beacon = new Beacon();
 
@@ -23,7 +23,7 @@ async function quitDaemon() {
   let message = '';
   for (let cogId in beacon.runners) {
     beacon.runners[cogId].stop();
-    await util.sleep(util.COMMAND_SLEEP);
+    await sleep();
     message += `Stopping and unloading ${cogId}.\n`;
   }
   return message;
