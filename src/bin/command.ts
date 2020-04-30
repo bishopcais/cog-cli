@@ -7,19 +7,27 @@ import { sleep } from '../util';
 import program from 'commander';
 import bridge = require('./bridge');
 import config = require('../config');
-import package_json = require('../../package.json');
+import Cog from '../cog';
+import { ConfigJson } from '../types';
 
-program.version(package_json.version, '-v, --version');
+let version;
+try {
+  version = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), {encoding: 'utf8'})).version;
+}
+catch (e) {
+  version = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), {encoding: 'utf8'})).version;
+}
+program.version(version, '-v, --version');
 
-function getIP() {
-  let network_interfaces = os.networkInterfaces();
-  for (let name of Object.keys(network_interfaces)) {
-    for (let network_interface of network_interfaces[name]) {
+function getIP(): string | null {
+  const network_interfaces = os.networkInterfaces();
+  for (const name of Object.keys(network_interfaces)) {
+    for (const network_interface of network_interfaces[name]) {
       if (network_interface.family === 'IPv6' || network_interface.internal) {
         continue;
       }
 
-      let parts = network_interface.address.split('.');
+      const parts = network_interface.address.split('.');
       if (parts[0] === '10' || parts[0] === '192' || (parts[0] === '172' && parseInt(parts[1]) >= 16 && parseInt(parts[1]) <= 31)) {
         continue;
       }
@@ -29,7 +37,7 @@ function getIP() {
   return null;
 }
 
-function loadCogFile(file: string) {
+function loadCogFile(file: string): Cog {
   let cog;
   try {
     cog = JSON.parse(fs.readFileSync(file, {encoding: 'utf8'}));
@@ -49,19 +57,19 @@ function loadCogFile(file: string) {
 
   // Resolve host if not set
   if (cog.port && !cog.host) {
-    let host = config.getCfg()['host'];
+    const host = config.getCfg()['host'];
     if (host) {
       cog.host = host;
     }
     else {
       // In case there are no public IP addresses, just default to localhost
-      let ip_address = getIP();
+      const ip_address = getIP();
       cog.host = (ip_address) ? 'http://' + ip_address : 'http://localhost';
     }
   }
 
   // Make sure host starts with http protocol
-  let pattern = /^https?:\/\//;
+  const pattern = /^https?:\/\//;
   if (cog.host && !pattern.test(cog.host)) {
     cog.host = 'http://' + cog.host;
   }
@@ -71,7 +79,7 @@ function loadCogFile(file: string) {
 
   if (!cog.run) {
     if (fs.existsSync(path.resolve(cog.cwd, 'package.json'))) {
-      let package_json = JSON.parse(
+      const package_json = JSON.parse(
         fs.readFileSync(path.resolve(cog.cwd, 'package.json'), {encoding: 'utf-8'})
       );
       if (package_json.main) {
@@ -83,8 +91,8 @@ function loadCogFile(file: string) {
   return cog;
 }
 
-async function getFiles(file: string, cmd: program.Command) {
-  let files = [];
+async function getFiles(file: string, cmd: program.Command): Promise<string[]> {
+  const files = [];
   if (!fs.existsSync(file)) {
     throw new Error(`${file} - file not found`);
   }
@@ -94,18 +102,18 @@ async function getFiles(file: string, cmd: program.Command) {
       files.push(path.join(file, 'cog.json'));
     }
     else if (cmd.recursive) {
-      let dirs = [file];
+      const dirs = [file];
       while (dirs.length > 0) {
-        let dir = dirs.pop();
+        const dir = dirs.pop();
         if (!dir) {
           break;
         }
-        for (let entry of fs.readdirSync(dir)) {
-          let current = fs.realpathSync(path.join(dir, entry));
+        for (const entry of fs.readdirSync(dir)) {
+          const current = fs.realpathSync(path.join(dir, entry));
           if (!fs.lstatSync(current).isDirectory()) {
             continue;
           }
-          let cog_file = path.join(current, 'cog.json');
+          const cog_file = path.join(current, 'cog.json');
           if (fs.existsSync(cog_file)) {
             files.push(path.resolve(cog_file));
           }
@@ -122,23 +130,16 @@ async function getFiles(file: string, cmd: program.Command) {
   return files;
 }
 
-async function getCogIds(cog_id: string, cmd: program.Command) {
-  let cog_ids = [];
+async function getCogIds(cog_id: string, cmd: program.Command): Promise<string[]> {
+  const cog_ids = [];
   if (fs.existsSync(cog_id)) {
     cmd.file = true;
   }
   if (cmd.file || cmd.recursive) {
-    let files;
-    try {
-      files = await getFiles(cog_id, cmd);
-    }
-    catch (err) {
-      throw err;
-    }
-    for (let file of files) {
+    const files = await getFiles(cog_id, cmd);
+    for (const file of files) {
       try {
-        let cog = loadCogFile(file);
-        cog_ids.push(cog.id);
+        cog_ids.push(loadCogFile(file).id);
       }
       catch (err) {
         console.error(err);
@@ -155,7 +156,7 @@ program.command('launch')
   .description('Launches daemon.')
   .action(bridge.launch);
 
-async function runFileFunction(func: Function, file: string, cmd: program.Command) {
+async function runFileFunction(func: Function, file: string, cmd: program.Command): Promise<void> {
   bridge.ping(async (connected) => {
     if (!connected) {
       return;
@@ -164,14 +165,13 @@ async function runFileFunction(func: Function, file: string, cmd: program.Comman
       file = 'cog.json';
     }
     try {
-      let files = await getFiles(file, cmd);
+      const files = await getFiles(file, cmd);
       if (files.length === 0) {
         return console.error('No cogs found');
       }
-      for (let file of files) {
+      for (const file of files) {
         try {
-          let cog = loadCogFile(file);
-          func(cog);
+          func(loadCogFile(file));
           // Brief sleep to let previous cog finish loading
           // before moving onto the next one
           await sleep();
@@ -201,17 +201,17 @@ program.command('reload [file]')
     runFileFunction(bridge.reload, file, cmd);
   });
 
-async function runCogFunction(func: Function, cog_id: string, cmd: program.Command) {
+async function runCogFunction(func: Function, cog_id: string, cmd: program.Command): Promise<void> {
   bridge.ping(async (connected) => {
     if (!connected) {
       return;
     }
     try {
-      let cog_ids = await getCogIds(cog_id, cmd);
+      const cog_ids = await getCogIds(cog_id, cmd);
       if (cog_ids.length === 0) {
         return console.error('No cogs specified');
       }
-      for (let cog_id of cog_ids) {
+      for (const cog_id of cog_ids) {
         try {
           func(cog_id);
           await sleep();
@@ -261,7 +261,7 @@ program.command('output [cog_id]')
 program.command('ip')
   .description(`Print out the default IP address cog-cli will use.`)
   .action(() => {
-    let ip = getIP();
+    const ip = getIP();
     if (ip) {
       console.log(ip);
     }
@@ -277,8 +277,8 @@ program.command('quit')
 program.command('config [variable] [value]')
   .description(`Show or set config variable.`)
   .option('-d, --delete', 'Unset the value for config variable')
-  .action((variable: string | null, value: string | null, cmd: program.Command) => {
-    let cfg = config.getCfg();
+  .action((variable: keyof ConfigJson | null, value: string | null, cmd: program.Command) => {
+    const cfg = config.getCfg();
 
     if (cmd.delete === true && !variable) {
       console.error('must pass variable to delete');
@@ -288,7 +288,7 @@ program.command('config [variable] [value]')
       delete cfg[variable];
     }
     else if (!variable) {
-      for (let option of config.allowedOptions) {
+      for (const option of config.allowedOptions) {
         console.log(`${option.padEnd(8)}   ${cfg[option] || ''}`);
       }
       return;
@@ -302,7 +302,7 @@ program.command('config [variable] [value]')
         return console.error(`Invalid config variable: ${variable}`);
       }
     }
-    else {
+    else if (value) {
       if (config.allowedOptions.includes(variable)) {
         cfg[variable] = value;
       }

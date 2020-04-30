@@ -6,26 +6,14 @@ import config = require('../config');
 import Cog from '../cog';
 
 interface RequestSignal {
-  action: 'load' | 'reload' | 'start' | 'stop' | 'unload' | 'status' | 'output' | 'quit',
-  cog?: Cog,
-  cog_id?: string
-}
-
-// Launches a daemon.
-function launch(): void {
-  // Check if daemon is alreay launched
-  let daemon = connect((err) => {
-    if (err) {
-      return launchDaemon();
-    }
-    console.log('Daemon was alreay launched');
-    daemon.end();
-  });
+  action: 'load' | 'reload' | 'start' | 'stop' | 'unload' | 'status' | 'output' | 'quit';
+  cog?: Cog;
+  cog_id?: string;
 }
 
 function launchDaemon(): void {
-  let log = fs.openSync(config.paths.logFile, 'a');
-  let child = spawn(process.execPath || 'node', [
+  const log = fs.openSync(config.paths.logFile, 'a');
+  const child = spawn(process.execPath || 'node', [
     path.join(path.dirname(fs.realpathSync(__filename)), '../daemon/daemon.js')
   ], {
     cwd: process.cwd(),
@@ -56,17 +44,29 @@ function launchDaemon(): void {
 }
 
 function connect(cb: (err?: string) => void): net.Socket {
-  let daemon = net.connect(config.port, (): void => {
+  const daemon = net.connect(config.port, (): void => {
     cb();
   });
   daemon.on('error', (): void => {
     cb('error');
   });
   return daemon;
-};
+}
 
-let request = (signal: RequestSignal): void => {
-  let daemon = connect((err?: string): void => {
+// Launches a daemon.
+function launch(): void {
+  // Check if daemon is alreay launched
+  const daemon = connect((err) => {
+    if (err) {
+      return launchDaemon();
+    }
+    console.log('Daemon was alreay launched');
+    daemon.end();
+  });
+}
+
+function request(signal: RequestSignal): void {
+  const daemon = connect((err?: string): void => {
     if (err) {
       console.error('Daemon needs to be launched. Launch it with: cog launch');
       return;
@@ -83,36 +83,36 @@ let request = (signal: RequestSignal): void => {
 export = {
   launch: launch,
 
-  load: (cog: Cog) => {
+  load: (cog: Cog): void => {
     request({ 'action': 'load', 'cog': cog });
   },
 
-  reload: (cog: Cog) => {
+  reload: (cog: Cog): void => {
     request({ 'action': 'reload', 'cog': cog });
   },
 
-  start: (cog_id: string) => {
+  start: (cog_id: string): void => {
     request({ 'action': 'start', 'cog_id': cog_id });
   },
 
-  stop: (cog_id: string) => {
+  stop: (cog_id: string): void => {
     request({ 'action': 'stop', 'cog_id': cog_id });
   },
 
-  unload: (cog_id: string) => {
+  unload: (cog_id: string): void => {
     request({ 'action': 'unload', 'cog_id': cog_id });
   },
 
-  status: (cog_id: string) => {
+  status: (cog_id: string): void => {
     request({ 'action': 'status', 'cog_id': cog_id });
   },
 
-  output: (cog_id: string) => {
+  output: (cog_id: string): void => {
     request({ 'action': 'output', 'cog_id': cog_id });
   },
 
-  ping: (callback: (connected: boolean) => void) => {
-    let daemon = connect((err) => {
+  ping: (callback: (connected: boolean) => void): void => {
+    const daemon = connect((err) => {
       if (err) {
         console.error('Daemon needs to be launched. Launch it with: cog launch');
         callback(false);
@@ -132,7 +132,7 @@ export = {
     });
   },
 
-  quit: () => {
+  quit: (): void => {
     request({ 'action': 'quit' });
   }
 };

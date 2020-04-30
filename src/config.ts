@@ -1,5 +1,6 @@
 import path = require('path');
 import fs = require('fs');
+import { ConfigJson } from './types';
 
 let home;
 if (process.env.COG_HOME) {
@@ -25,27 +26,30 @@ if (process.platform === 'win32') {
   port = path.join('\\\\?\\pipe', port);
 }
 
+const paths = {
+  home: home,
+  logFile: path.resolve(home, 'cog.log'),
+  configFile: path.resolve(home, 'config.json')
+};
+
+const allowedOptions: (keyof ConfigJson)[] = ['username', 'key', 'host'];
+
 export = {
-  port: port,
+  port,
+  paths,
 
-  paths: {
-    home: home,
-    logFile: path.resolve(home, 'cog.log'),
-    authFile: path.resolve(home, 'auth.json')
-  },
+  allowedOptions,
 
-  allowedOptions: ['username', 'key', 'host'],
-
-  getCfg: function() {
-    if (!fs.existsSync(this.paths.authFile)) {
+  getCfg: (): ConfigJson => {
+    if (!fs.existsSync(paths.configFile)) {
       return {};
     }
     return JSON.parse(
-      fs.readFileSync(this.paths.authFile, 'utf8')
+      fs.readFileSync(paths.configFile, 'utf8')
     );
   },
 
-  saveCfg: function(json: object, callback: (err: NodeJS.ErrnoException | null) => void) {
-    fs.writeFile(this.paths.authFile, JSON.stringify(json), callback);
+  saveCfg: (json: ConfigJson, callback: (err: NodeJS.ErrnoException | null) => void): void => {
+    fs.writeFile(paths.configFile, JSON.stringify(json), callback);
   }
 };

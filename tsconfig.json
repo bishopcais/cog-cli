@@ -2,14 +2,13 @@
   "compilerOptions": {
     "target": "es5",
     "module": "commonjs",
+    "declaration": true,
     "outDir": "./dist",
     "strict": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "allowJs": true
+    "resolveJsonModule": false,
+    "esModuleInterop": true
   },
   "include": [
-    "package.json",
     "src/**/*"
   ],
   "exclude": [

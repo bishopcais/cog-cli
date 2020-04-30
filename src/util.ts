@@ -4,5 +4,5 @@
 export const COMMAND_SLEEP = 25;
 
 export async function sleep(milliseconds?: number): Promise<NodeJS.Timeout> {
-  return setTimeout(() => {}, milliseconds || COMMAND_SLEEP);
+  return new Promise((resolve) => { setTimeout(resolve, milliseconds || COMMAND_SLEEP); });
 }

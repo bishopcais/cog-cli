@@ -7,10 +7,11 @@ import { getInterfaces } from './helpers';
 import { stringify as queryStringify } from 'querystring';
 import os from 'os';
 
-class Connection extends EventEmitter {
+export default class Connection extends EventEmitter {
   remote: null | SocketIOClient.Socket;
-  url: string
+  url: string;
   reportUrl: string;
+  handlers: {[key: string]: Function};
 
   constructor(url: string) {
     super();
@@ -18,9 +19,11 @@ class Connection extends EventEmitter {
 
     this.url = url;
     this.reportUrl = this.url + '/runner';
+
+    this.handlers = {};
   }
 
-  connect(cb: (err?: string) => void) {
+  connect(cb: (err?: string) => void): void {
     if (this.remote && this.remote.connected) {
       return cb();
     }
@@ -34,7 +37,15 @@ class Connection extends EventEmitter {
       });
     }
 
-    let onConnect = () => {
+    const clear = (): void => {
+      if (this.remote) {
+        for (const handler in this.handlers) {
+          this.remote.removeListener(handler, this.handlers[handler]);
+        }
+      }
+    };
+
+    this.handlers.onConnect = (): void => {
       cb();
       clear();
       if (!this.remote) {
@@ -46,7 +57,7 @@ class Connection extends EventEmitter {
       this.remote.on('p cogs', this.emit.bind(this, 'p cogs'));
     };
 
-    let onError = (err: any) => {
+    this.handlers.onError = (err: Error): void => {
       clear();
       if (this.remote && !this.remote.connected) {
         this.remote.close();
@@ -55,30 +66,21 @@ class Connection extends EventEmitter {
       cb('Connection error - ' + err);
     };
 
-    let clear = () => {
-      if (this.remote) {
-        this.remote.removeListener('connect', onConnect);
-        this.remote.removeListener('connect_error', onError);
-        this.remote.removeListener('error', onError);
-      }
-
-    };
-
-    this.remote.on('connect', onConnect);
-    this.remote.on('connect_error', onError);
-    this.remote.on('error', onError);
+    this.remote.on('connect', this.handlers.onConnect);
+    this.remote.on('connect_error', this.handlers.onError);
+    this.remote.on('error', this.handlers.onError);
 
     this.remote.connect();
   }
 
-  remoteEmit(type: string, ...args: any[]) {
+  remoteEmit(type: string, ...args: any[]): void {
     if (this.remote) {
       this.remote.emit(type, args);
     }
   }
 
-  getJSON() {
-    let cfg = config.getCfg();
+  getJSON(): object {
+    const cfg = config.getCfg();
 
     return {
       'user': process.env.USER,
@@ -94,12 +96,10 @@ class Connection extends EventEmitter {
     };
   }
 
-  destroy() {
+  destroy(): void {
     if (this.remote) {
       this.remote.close();
       this.remote = null;
     }
   }
 }
-
-module.exports = Connection;

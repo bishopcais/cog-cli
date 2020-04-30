@@ -1,15 +1,32 @@
 'use strict';
 
-const _ = require('lodash');
+import _ from 'lodash';
 import { EventEmitter } from 'events';
+import Connection from './connection';
+import Runner from './runner';
+import Cog from '../cog';
 
-const Runner = require('./runner');
-const Connection = require('./connection');
+const STAT_REPORT_TIME = 1000;
 
-let STAT_REPORT_TIME = 1000;
+type callback = (err?: string) => void;
+
+interface ExpandedStat {
+  cogId: string;
+  memory: number;
+  cpu: number;
+}
+
+interface Action {
+  cogId: string;
+  action: string;
+  watching: boolean;
+}
 
 export default class Beacon {
   emitter: EventEmitter;
+  runners: {[id: string]: Runner};
+  connections: {[url: string]: Connection};
+  cogs: {[id: string]: Cog};
 
   constructor() {
     this.emitter = new EventEmitter();
@@ -18,13 +35,13 @@ export default class Beacon {
     this.cogs = {};
   }
 
-  load(cog, next) {
-    let e = this.validate(cog);
-    if (e) {
-      return next(e);
+  load(cog: Cog, next: callback): void {
+    const err = this.validate(cog);
+    if (err) {
+      return next(err);
     }
 
-    this.connectCog(cog, (err) => {
+    this.connectCog(cog, (err?: string) => {
       if (err) {
         return next(err);
       }
@@ -32,8 +49,8 @@ export default class Beacon {
     });
   }
 
-  connectCog(cog, next) {
-    let url = cog.watcher;
+  connectCog(cog: Cog, next: callback): void {
+    const url = cog.watcher;
     let connection = this.connections[url];
 
     if (!connection) {
@@ -42,7 +59,7 @@ export default class Beacon {
       connection.on('disconnect', this.onDisconnect.bind(this, connection));
       connection.on('reconnect', this.onReconnect.bind(this, connection));
     }
-    connection.connect((err) => {
+    connection.connect((err?: string) => {
       if (err) {
         return next(err);
       }
@@ -52,16 +69,19 @@ export default class Beacon {
     });
   }
 
-  runCog(cog, next) {
+  runCog(cog: Cog, next: (err?: string) => void): void {
     if (_.find(this.runners, { cogId: cog.id })) {
-      return next(`Cog ${cog.id} is already running.`);
+      next(`Cog ${cog.id} is already running.`);
+      return;
     }
 
-    let runner = new Runner(cog);
+    const runner = new Runner(cog);
 
     runner.run((err) => {
       next(err);
-      if (err) return;
+      if (err) {
+        return;
+      }
 
       this.cogs[cog.id] = cog;
       this.runners[cog.id] = runner;
@@ -75,18 +95,18 @@ export default class Beacon {
   }
 
   // Events
-  onAction(connection, action) {
+  onAction(connection: Connection, action: Action): void {
     if (!action.cogId) {
       return;
     }
-    let cog = this.cogs[action.cogId];
+    const cog = this.cogs[action.cogId];
 
     // Check for permission.
     if (this.connections[cog.watcher] !== connection) {
       return;
     }
 
-    let action_name = action.action.toLowerCase();
+    const action_name = action.action.toLowerCase();
 
     if (action_name === 'watch') {
       if (action.watching) {
@@ -106,27 +126,26 @@ export default class Beacon {
       connection.remoteEmit('a playback', cog.runner.cache);
     }
     else {
-      cog.runner.sendSignal(action_name.toUpperCase());
+      cog.runner.sendSignal((action_name.toUpperCase() as NodeJS.Signals));
     }
   }
 
-  onDisconnect(connection) {
+  onDisconnect(connection: Connection): void {
     // Stop watcher.
-    let cogs = _.filter(this.cogs, { connection: connection });
-    _.each(cogs, (cog) => { this.stopWatching(cog); });
+    const cogs: Cog[] = _.filter(this.cogs, { connection: connection });
+    _.each(cogs, (cog: Cog) => this.stopWatching(cog));
   }
 
-  onReconnect(connection) {
-    let cogs = _.filter(this.cogs, { connection: connection });
-    let cogJSONs = _.map(cogs, (cog) => { return cog.runner.getJSON(); });
-    connection.remoteEmit('u cogs', cogJSONs);
+  onReconnect(connection: Connection): void {
+    const cogs: Cog[] = _.filter(this.cogs, { connection: connection });
+    connection.remoteEmit('u cogs', _.map(cogs, (cog: Cog) => cog.runner.getJSON()));
   }
 
-  onRunnerUpdate(cog) {
+  onRunnerUpdate(cog: Cog): void {
     this.connections[cog.watcher].remoteEmit('u cog', this.runners[cog.id].getJSON());
   }
 
-  onRunnerStream(cog, type, data) {
+  onRunnerStream(cog: Cog, type: string, data: any): void {
     if (cog.outputToConnection) {
       cog.connection.remoteEmit('stream', {cogId: cog.id, data: data.toString(), type: type});
     }
@@ -135,28 +154,26 @@ export default class Beacon {
     this.emitter.emit(type, data);
   }
 
-  start(cogId, cb) {
+  start(cogId: string, cb: (err?: string) => void): void {
     this.runners[cogId].run();
     cb();
   }
 
   // Actions
-  stop(cogId, cb) {
-    let runner = this.runners[cogId];
+  stop(cogId: string, cb: (err?: string) => void): void {
+    const runner = this.runners[cogId];
     if (!runner) {
       return cb('There is no instance loaded with id ' + cogId);
     }
     runner.stop(cb);
   }
 
-  unload(cogId, cb) {
-    let c = this.runners[cogId].getJSON();
-    let cog = this.cogs[cogId];
-
-    if (c.status !== 'exit') {
+  unload(cogId: string, cb: (err?: string) => void): void {
+    if (this.runners[cogId].status !== 'exit') {
       return cb(`Cog hasn't exited yet. Please close cog first.`);
     }
 
+    const cog = this.cogs[cogId];
     cog.connection.remoteEmit('r cog', cog.runner.getJSON());
     this.stopWatching(cog);
 
@@ -168,42 +185,46 @@ export default class Beacon {
     cb();
   }
 
-  reload(cog, cb) {
-    this.stop(cog.id, (err) => {
+  reload(cog: Cog, cb: (err?: string) => void): void {
+    this.stop(cog.id, (err?: string) => {
       if (err) {
-        return cb(err);
+        cb(err);
+        return;
       }
-      this.unload(cog.id, (err) => {
+      this.unload(cog.id, (err?: string) => {
         if (err) {
-          return cb(err);
+          cb(err);
+          return;
         }
         this.load(cog, cb);
       });
     });
   }
 
-  startWatching(cog) {
+  startWatching(cog: Cog): void {
     cog.outputToConnection = true;
     if (!cog.intervalId) {
       cog.intervalId = setInterval(() => {
         cog.runner.getStat((err, stat) => {
-          if (err) {
+          if (err || !stat) {
             return;
           }
-          stat.cogId = cog.id;
+          (stat as ExpandedStat).cogId = cog.id;
           cog.connection.remoteEmit('stat', stat);
         });
       }, STAT_REPORT_TIME);
     }
   }
 
-  stopWatching(cog) {
+  stopWatching(cog: Cog): void {
     cog.outputToConnection = false;
-    clearInterval(cog.intervalId);
-    cog.intervalId = null;
+    if (cog.intervalId) {
+      clearInterval(cog.intervalId);
+      cog.intervalId = null;
+    }
   }
 
-  status(cogId) {
+  status(cogId: string): string {
     let result = '';
 
     if (!cogId) {
@@ -214,16 +235,16 @@ export default class Beacon {
       result += 'Cogs\n';
       result += '------------\n';
       for (cogId in this.runners) {
-        let r = this.runners[cogId].getJSON();
-        result += `${r.id}: ${r.status} ${r.status === 'exit' ? r.exitCode : ''}\n`;
+        const runner = this.runners[cogId];
+        result += `${runner.cog.id}: ${runner.status} ${runner.status === 'exit' ? runner.exitCode : ''}\n`;
       }
 
       result += '\n\n';
       result += 'Connections\n';
       result += '------------\n';
       for (cogId in this.connections) {
-        let c = this.connections[cogId];
-        result += `${c.url}: ${c.remote && c.remote.connected ? 'connected' : 'disconnected'}\n`;
+        const conn = this.connections[cogId];
+        result += `${conn.url}: ${conn.remote && conn.remote.connected ? 'connected' : 'disconnected'}\n`;
       }
       result += '\n';
       return result;
@@ -238,15 +259,15 @@ export default class Beacon {
   }
 
   // Interfaces
-  on(type: string, listener: (...args: any[]) => void) {
+  on(type: string, listener: (...args: any[]) => void): void {
     this.emitter.on(type, listener);
   }
 
-  removeListener(type: string, listener: (...args: any[]) => void) {
+  removeListener(type: string, listener: (...args: any[]) => void): void {
     this.emitter.removeListener(type, listener);
   }
 
-  validate(cog) {
+  validate(cog: Cog): string | void {
     if (!cog.id) {
       return 'Cog id not supplied';
     }

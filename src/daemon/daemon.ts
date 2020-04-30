@@ -1,14 +1,14 @@
-import fs = require('fs');
-import net = require('net');
+import fs from 'fs';
+import net from 'net';
 import config from '../config';
 import Beacon from '../beacon/beacon';
 import { sleep } from '../util';
 
-let beacon = new Beacon();
+const beacon = new Beacon();
 
-let beginStreaming = (socket, id) => {
-  let i = id ? ':' + id : '';
-  let fn = socket.write.bind(socket);
+function beginStreaming(socket: net.Socket, id: string): void {
+  const i = id ? ':' + id : '';
+  const fn = socket.write.bind(socket);
 
   beacon.on('stdout' + i, fn);
   beacon.on('stderr' + i, fn);
@@ -17,11 +17,11 @@ let beginStreaming = (socket, id) => {
     beacon.removeListener('stdout' + i, fn);
     beacon.removeListener('stderr' + i, fn);
   });
-};
+}
 
-async function quitDaemon() {
+async function quitDaemon(): Promise<string> {
   let message = '';
-  for (let cogId in beacon.runners) {
+  for (const cogId in beacon.runners) {
     beacon.runners[cogId].stop();
     await sleep();
     message += `Stopping and unloading ${cogId}.\n`;
@@ -29,15 +29,15 @@ async function quitDaemon() {
   return message;
 }
 
-function killDaemon() {
+function killDaemon(): void {
   quitDaemon();
   process.exit();
 }
 
-let server = net.createServer((socket) => {
+const server = net.createServer((socket) => {
   socket.on('data', (chunk) => {
-    let data = JSON.parse(chunk.toString());
-    let cogId = data.id;
+    const data = JSON.parse(chunk.toString());
+    const cogId = data.id;
 
     if (!data.action) {
       socket.end('No action.');
@@ -51,22 +51,22 @@ let server = net.createServer((socket) => {
       });
     }
     else if (data.action === 'reload') {
-      beacon.reload(data.cog, (err) => {
+      beacon.reload(data.cog, (err?: string): void => {
         socket.end(`${data.cog.id} - ${err || 'Cog reloaded.'}\n`);
       });
     }
     else if (data.action === 'start') {
-      beacon.start(cogId, (err) => {
+      beacon.start(cogId, (err?: string): void => {
         socket.end(`${cogId} - ${err || 'Cog started.'}\n`);
       });
     }
     else if (data.action === 'stop') {
-      beacon.stop(cogId, (err) => {
+      beacon.stop(cogId, (err?: string): void => {
         socket.end(`${cogId} - ${err || 'Cog stopped.'}\n`);
       });
     }
     else if (data.action === 'unload') {
-      beacon.unload(cogId, (err) => {
+      beacon.unload(cogId, (err?: string): void => {
         socket.end(`${cogId} - ${err || 'Cog unloaded.'}\n`);
       });
     }
@@ -93,14 +93,14 @@ let server = net.createServer((socket) => {
   });
 });
 
-server.on('error', (err) => {
+server.on('error', (err): void => {
   if (process.send) {
     process.send({'error': err});
   }
   throw err;
 });
 
-server.on('listening', (evt) => {
+server.on('listening', (): void => {
   if (process.send) {
     process.send({'listening': true});
   }

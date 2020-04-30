@@ -10,11 +10,14 @@ import Cog from '../cog';
 
 const CACHE_LIMIT = 30;
 
-class Runner {
+export default class Runner {
   cog: Cog;
   cogId: string;
   emitter: EventEmitter;
-  cache: {type: string, data: string}[];
+  cache: {
+    type: string;
+    data: string;
+  }[];
   child?: ChildProcessWithoutNullStreams;
   status: 'running' | 'exit';
   exitCode: number;
@@ -30,14 +33,14 @@ class Runner {
     this.exitCode = 0;
   }
 
-  run(next: (err?: string) => void): void {
-    let env = _.extend({}, this.cog.env || {}, process.env, { PWD: this.cog.cwd });
+  run(next?: (err?: string) => void): void {
+    const env = _.extend({}, this.cog.env || {}, process.env, { PWD: this.cog.cwd });
 
     if (this.cog['path+']) {
       env.PATH = `${this.cog['path+']}:${env.PATH}`;
     }
 
-    let child = this.child = spawn(this.cog.run, this.cog.args, {
+    const child = this.child = spawn(this.cog.run, this.cog.args, {
       cwd: this.cog.cwd,
       env: env,
       windowsHide: true,
@@ -46,8 +49,8 @@ class Runner {
 
     if (this.cog.log) {
       try {
-        let filePath = path.resolve(this.cog.cwd, this.cog.log);
-        let logStream = fs.createWriteStream(filePath, { flags: 'a' });
+        const filePath = path.resolve(this.cog.cwd, this.cog.log);
+        const logStream = fs.createWriteStream(filePath, { flags: 'a' });
         logStream.on('error', (err) => {
           console.error(err);
         });
@@ -55,7 +58,9 @@ class Runner {
         child.stderr.pipe(logStream);
       }
       catch (err) {
-        return next(err);
+        if (next) {
+          next(err);
+        }
       }
     }
 
@@ -97,7 +102,9 @@ class Runner {
   }
 
   stop(next?: () => void): void {
-    next = next || (() => {});
+    next = next || ((): void => {
+      // do nothing
+    });
     if (!this.child || this.status === 'exit') {
       return next();
     }
@@ -105,15 +112,17 @@ class Runner {
     this.child.kill();
   }
 
-  sendSignal(signal: string, next?: () => void): void {
-    next = next || (() => {});
+  sendSignal(signal: NodeJS.Signals, next?: () => void): void {
+    next = next || ((): void => {
+      // do nothing
+    });
     if (!this.child || this.status === 'exit') {
       return next();
     }
     this.child.kill(signal);
   }
 
-  getJSON() {
+  getJSON(): object {
     return {
       'id': this.cog.id,
       'type': this.cog.type,
@@ -130,15 +139,15 @@ class Runner {
     };
   }
 
-  on(type: string, listener: (...args: any[]) => void) {
+  on(type: string, listener: (...args: any[]) => void): void {
     this.emitter.on(type, listener);
   }
 
-  emit(type: string, ...data: any[]) {
+  emit(type: string, ...data: any[]): void {
     this.emitter.emit(type, data);
   }
 
-  addToCache(type: string, data: string | Buffer) {
+  addToCache(type: string, data: string | Buffer): void {
     this.cache.push({
       type: type,
       data: data.toString()
@@ -149,14 +158,14 @@ class Runner {
     }
   }
 
-  getStat(cb: (err: Error | null, stat?: {memory: number, cpu: number}) => void) {
+  getStat(cb: (err: string | null, stat?: {memory: number; cpu: number}) => void): void {
     if (!this.child || !this.child.pid || this.status !== 'running') {
       return cb(null, {memory: 0, cpu: 0});
     }
 
     pidusage(this.child.pid, (err, res) => {
       if (err) {
-        return cb(err);
+        return cb(err.message);
       }
 
       return cb(null, {
@@ -166,5 +175,3 @@ class Runner {
     });
   }
 }
-
-module.exports = Runner;

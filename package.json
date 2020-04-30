@@ -1,24 +1,25 @@
 {
   "name": "@cisl/cog-cli",
-  "version": "1.3.0",
-  "description": "Runs a cog. Connects it to the central cog server.",
+  "version": "2.0.0-dev.1",
+  "description": "CLI interface for managing cogs on a given system",
   "author": "Ashwin Hamal",
   "contributors": [
     {
       "name": "Matthew Peveler",
-      "email": "matt.peveler@gmail.com"
+      "email": "pevelm@rpi.edu"
     }
   ],
   "license": "MIT",
   "bin": {
-    "crun": "dist/bin/command.js",
     "cog": "dist/bin/command.js"
   },
   "scripts": {
-    "test": "jest --verbose",
+    "test": "exit 0 || jest --verbose",
     "build": "tsc",
     "watch": "tsc -w",
-    "lint": "eslint src/**/*.ts"
+    "lint": "eslint src/**/*.ts",
+    "prepublishOnly": "echo \"Do not run publish directly, run tsc-publish\" && exit 1",
+    "tsc-publish": "tsc-publish"
   },
   "engines": {
     "node": ">=8"
@@ -38,15 +39,16 @@
     "@typescript-eslint/eslint-plugin": "^2.3.0",
     "@typescript-eslint/parser": "^2.3.0",
     "eslint": "^6.4.0",
-    "jest": "^24.9.0",
-    "ts-jest": "^24.1.0",
+    "jest": "^25.4.0",
+    "ts-jest": "^25.4.0",
+    "tsc-publish": "^0.5.2",
     "typescript": "^3.6.3"
   },
   "repository": {
     "type": "git",
-    "url": "https://internal.cisl.rpi.edu/code/cog-runner/cog-cli"
+    "url": "https://github.com/cislrpi/cog-cli"
   },
   "publishConfig": {
-    "registry": "https://internal.cisl.rpi.edu/npm/"
+    "access": "public"
   }
 }
