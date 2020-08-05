@@ -30,7 +30,7 @@
     "@types/pidusage": "^2.0.1",
     "@types/socket.io-client": "^1.4.32",
     "commander": "^2.20.0",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "pidusage": "^2.0.17",
     "socket.io-client": "^2.2.0"
   },
