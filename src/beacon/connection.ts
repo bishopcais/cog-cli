@@ -73,9 +73,9 @@ export default class Connection extends EventEmitter {
     this.remote.connect();
   }
 
-  remoteEmit(type: string, ...args: any[]): void {
+  remoteEmit(type: string, arg: any): void {
     if (this.remote) {
-      this.remote.emit(type, args);
+      this.remote.emit(type, arg);
     }
   }
 

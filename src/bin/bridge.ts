@@ -8,7 +8,7 @@ import Cog from '../cog';
 interface RequestSignal {
   action: 'load' | 'reload' | 'start' | 'stop' | 'unload' | 'status' | 'output' | 'quit';
   cog?: Cog;
-  cog_id?: string;
+  cogId?: string;
 }
 
 function launchDaemon(): void {
@@ -92,23 +92,23 @@ export = {
   },
 
   start: (cog_id: string): void => {
-    request({ 'action': 'start', 'cog_id': cog_id });
+    request({ 'action': 'start', cogId: cog_id });
   },
 
   stop: (cog_id: string): void => {
-    request({ 'action': 'stop', 'cog_id': cog_id });
+    request({ 'action': 'stop', cogId: cog_id });
   },
 
   unload: (cog_id: string): void => {
-    request({ 'action': 'unload', 'cog_id': cog_id });
+    request({ 'action': 'unload', cogId: cog_id });
   },
 
   status: (cog_id: string): void => {
-    request({ 'action': 'status', 'cog_id': cog_id });
+    request({ 'action': 'status', cogId: cog_id });
   },
 
   output: (cog_id: string): void => {
-    request({ 'action': 'output', 'cog_id': cog_id });
+    request({ 'action': 'output', cogId: cog_id });
   },
 
   ping: (callback: (connected: boolean) => void): void => {
