@@ -23,6 +23,19 @@ export default class Connection extends EventEmitter {
     this.handlers = {};
   }
 
+  clear(): void {
+    if (this.remote) {
+      for (const handler in this.handlers) {
+        try {
+          this.remote.removeListener(handler, this.handlers[handler]);
+        }
+        catch (err) {
+          console.error(`Could not removeListener for ${handler} - ${err}`);
+        }
+      }
+    }
+  }
+
   connect(cb: (err?: string) => void): void {
     if (this.remote && this.remote.connected) {
       return cb();
@@ -37,28 +50,21 @@ export default class Connection extends EventEmitter {
       });
     }
 
-    const clear = (): void => {
-      if (this.remote) {
-        for (const handler in this.handlers) {
-          this.remote.removeListener(handler, this.handlers[handler]);
-        }
-      }
-    };
-
     this.handlers.onConnect = (): void => {
-      cb();
-      clear();
       if (!this.remote) {
+        cb('No remote');
         return;
       }
+      this.clear();
       this.remote.on('action', this.emit.bind(this, 'action'));
       this.remote.on('disconnect', this.emit.bind(this, 'disconnect'));
       this.remote.on('reconnect', this.emit.bind(this, 'reconnect'));
       this.remote.on('p cogs', this.emit.bind(this, 'p cogs'));
+      cb();
     };
 
     this.handlers.onError = (err: Error): void => {
-      clear();
+      this.clear();
       if (this.remote && !this.remote.connected) {
         this.remote.close();
         this.remote = null;
