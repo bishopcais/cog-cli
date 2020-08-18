@@ -2,7 +2,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 import pidusage from 'pidusage';
 import { EventEmitter } from 'events';
 import _ from 'lodash';
@@ -18,7 +18,7 @@ export default class Runner {
     type: string;
     data: string;
   }[];
-  child?: ChildProcessWithoutNullStreams;
+  child?: ChildProcess;
   status: 'running' | 'exit';
   exitCode: number;
 
