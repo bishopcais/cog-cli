@@ -86,7 +86,7 @@ export default class Connection extends EventEmitter {
       'user': process.env.USER,
       'pid': process.pid,
       'platform': process.platform,
-      'interfaces': getInterfaces,
+      'interfaces': getInterfaces(),
       'username': cfg.username,
       'key': cfg.key,
       'cogs': [],
