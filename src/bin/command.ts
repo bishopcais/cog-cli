@@ -267,6 +267,8 @@ program.command('config [variable] [value]')
   .action((variable: keyof ConfigJson | null, value: string | null, cmd: program.Command) => {
     const cfg = config.getCfg();
 
+    const header = `${'Key'.padEnd(8)} | Value\n${'-'.repeat(16)}`;
+
     if (cmd.delete === true && !variable) {
       console.error('must pass variable to delete');
       return;
@@ -275,14 +277,16 @@ program.command('config [variable] [value]')
       delete cfg[variable];
     }
     else if (!variable) {
+      console.log(header);
       for (const option of config.allowedOptions) {
-        console.log(`${option.padEnd(8)}   ${cfg[option] || ''}`);
+        console.log(`${option.padEnd(8)} | ${cfg[option] || ''}`);
       }
       return;
     }
     else if (variable && !value) {
+      console.log(header);
       if (config.allowedOptions.includes(variable)) {
-        console.log(`${variable.padEnd(8)}   ${cfg[variable]}`);
+        console.log(`${variable.padEnd(8)} | ${cfg[variable]}`);
         return;
       }
       else {
