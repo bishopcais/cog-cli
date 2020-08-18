@@ -18,5 +18,5 @@ export default interface Cog {
   runner: Runner;
   connection: Connection;
   outputToConnection: boolean;
-  intervalId: NodeJS.Timeout | null;
+  intervalId: NodeJS.Timer | null;
 }

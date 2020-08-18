@@ -3,7 +3,7 @@
 // properly update cogs on the UI
 export const COMMAND_SLEEP = 25;
 
-export async function sleep(milliseconds?: number): Promise<NodeJS.Timeout> {
+export async function sleep(milliseconds?: number): Promise<NodeJS.Timer> {
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds || COMMAND_SLEEP);
   });
