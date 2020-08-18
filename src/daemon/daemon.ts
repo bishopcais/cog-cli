@@ -37,9 +37,12 @@ function killDaemon(): void {
 const server = net.createServer((socket) => {
   socket.on('data', (chunk) => {
     const data = JSON.parse(chunk.toString());
-    const cogId = data.id;
+    const cogId = data.cogId;
 
-    if (!data.action) {
+    if (data === 'ping' || data.action === 'ping') {
+      socket.end('pong');
+    }
+    else if (!data.action) {
       socket.end('No action.');
     }
     else if (cogId && !beacon.runners[cogId]) {
@@ -75,9 +78,6 @@ const server = net.createServer((socket) => {
     }
     else if (data.action === 'output') {
       beginStreaming(socket, cogId);
-    }
-    else if (data.action === 'ping') {
-      socket.end(`pong`);
     }
     else if (data.action === 'quit') {
       quitDaemon().then((msg) => {
