@@ -109,9 +109,14 @@ server.on('listening', (): void => {
 
 process.on('SIGINT', () => killDaemon());
 process.on('SIGTERM', () => killDaemon());
-process.on('uncaughtException', () => killDaemon());
+process.on('uncaughtException', (err) => {
+  console.error('-- caught exception --');
+  console.error(err);
+  killDaemon();
+});
 
 if (fs.existsSync(config.port)) {
   fs.unlinkSync(config.port);
 }
+
 server.listen(config.port);
