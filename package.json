@@ -11,7 +11,8 @@
   ],
   "license": "MIT",
   "bin": {
-    "cog": "dist/bin/command.js"
+    "cog": "dist/bin/command.js",
+    "crun": "dist/bin/command.js"
   },
   "scripts": {
     "test": "exit 0 || jest --verbose",

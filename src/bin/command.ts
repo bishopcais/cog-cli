@@ -152,6 +152,12 @@ async function getCogIds(cog_id: string, cmd: program.Command): Promise<string[]
   return cog_ids;
 }
 
+for (const arg of process.argv) {
+  if (arg.endsWith('crun')) {
+    console.warn('WARNING: crun command is deprecated, please use cog instead.\n');
+  }
+}
+
 program.command('launch')
   .description('Launches daemon.')
   .action(bridge.launch);
