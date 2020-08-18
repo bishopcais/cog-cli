@@ -1,3 +1,5 @@
+import { networkInterfaces } from 'os';
+
 // constant representing the amount of time we need to sleep between cog
 // commands or else cog-server and mongoose will bug out and not
 // properly update cogs on the UI
@@ -49,4 +51,22 @@ export function validSignal(signal: string): boolean {
     "SIGLOST",
     "SIGINFO"
   ].includes(signal);
+}
+
+export function getIP(): string | null {
+  const network_interfaces = networkInterfaces();
+  for (const name of Object.keys(network_interfaces)) {
+    for (const network_interface of network_interfaces[name]) {
+      if (network_interface.family === 'IPv6' || network_interface.internal) {
+        continue;
+      }
+
+      const parts = network_interface.address.split('.');
+      if (parts[0] === '10' || parts[0] === '192' || (parts[0] === '172' && parseInt(parts[1]) >= 16 && parseInt(parts[1]) <= 31)) {
+        continue;
+      }
+      return network_interface.address;
+    }
+  }
+  return null;
 }

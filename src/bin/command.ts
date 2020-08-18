@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 import fs = require('fs');
-import os = require('os');
 import path = require('path');
-import { sleep } from '../util';
+import { sleep, getIP } from '../util';
 
 import program from 'commander';
 import bridge = require('./bridge');
@@ -15,27 +14,9 @@ try {
   version = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), {encoding: 'utf8'})).version;
 }
 catch (e) {
-  version = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), {encoding: 'utf8'})).version;
+  version = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), {encoding: 'utf8'})).version;
 }
 program.version(version, '-v, --version');
-
-function getIP(): string | null {
-  const network_interfaces = os.networkInterfaces();
-  for (const name of Object.keys(network_interfaces)) {
-    for (const network_interface of network_interfaces[name]) {
-      if (network_interface.family === 'IPv6' || network_interface.internal) {
-        continue;
-      }
-
-      const parts = network_interface.address.split('.');
-      if (parts[0] === '10' || parts[0] === '192' || (parts[0] === '172' && parseInt(parts[1]) >= 16 && parseInt(parts[1]) <= 31)) {
-        continue;
-      }
-      return network_interface.address;
-    }
-  }
-  return null;
-}
 
 function loadCogFile(file: string): Cog {
   let cog;
