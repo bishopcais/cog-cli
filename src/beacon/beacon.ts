@@ -10,7 +10,7 @@ const STAT_REPORT_TIME = 1000;
 
 type callback = (err?: string) => void;
 
-interface ExpandedStat {
+interface CogStat {
   cogId: string;
   memory: number;
   cpu: number;
@@ -209,7 +209,7 @@ export default class Beacon {
           if (err || !stat) {
             return;
           }
-          (stat as ExpandedStat).cogId = cog.id;
+          (stat as CogStat).cogId = cog.id;
           cog.connection.remoteEmit('stat', stat);
         });
       }, STAT_REPORT_TIME);
