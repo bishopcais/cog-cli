@@ -7,6 +7,7 @@ import pidusage from 'pidusage';
 import { EventEmitter } from 'events';
 import _ from 'lodash';
 import Cog from '../cog';
+import { validSignal } from '../util';
 
 const CACHE_LIMIT = 30;
 
@@ -116,7 +117,11 @@ export default class Runner {
     next = next || ((): void => {
       // do nothing
     });
-    if (!this.child || this.status === 'exit') {
+    if (!validSignal) {
+      console.error(`invalid signal sent: ${signal}`);
+      return next();
+    }
+    else if (!this.child || this.status === 'exit') {
       return next();
     }
     this.child.kill(signal);

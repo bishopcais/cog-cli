@@ -5,6 +5,7 @@ import { EventEmitter } from 'events';
 import Connection from './connection';
 import Runner from './runner';
 import Cog from '../cog';
+import { validSignal } from '../util';
 
 const STAT_REPORT_TIME = 1000;
 
@@ -126,7 +127,12 @@ export default class Beacon {
       connection.remoteEmit('a playback', cog.runner.cache);
     }
     else {
-      cog.runner.sendSignal((action_name.toUpperCase() as NodeJS.Signals));
+      const signal = action_name.toUpperCase();
+      if (!validSignal(signal)) {
+        console.error(`invalid signal sent: ${signal}`);
+        return;
+      }
+      cog.runner.sendSignal((signal as NodeJS.Signals));
     }
   }
 
