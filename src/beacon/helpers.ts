@@ -1,6 +1,6 @@
 import { networkInterfaces, NetworkInterfaceInfoIPv4, NetworkInterfaceInfoIPv6 } from 'os';
 
-type NetworkInterfaceInfo = NetworkInterfaceInfoIPv4 | NetworkInterfaceInfoIPv6;
+export type NetworkInterfaceInfo = NetworkInterfaceInfoIPv4 | NetworkInterfaceInfoIPv6;
 
 export function getInterfaces(): NetworkInterfaceInfo[] {
   const ifaces = networkInterfaces();

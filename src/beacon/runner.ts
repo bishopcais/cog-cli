@@ -11,6 +11,21 @@ import { validSignal } from '../util';
 
 const CACHE_LIMIT = 30;
 
+interface RunnerJson {
+  id: string;
+  type?: string;
+  pid: number;
+  cwd: string;
+  host?: string;
+  port?: number;
+  tags?: string[];
+  description?: string;
+  run: string;
+  status: string;
+  exitCode: number;
+  args?: string[];
+}
+
 export default class Runner {
   cog: Cog;
   cogId: string;
@@ -127,20 +142,20 @@ export default class Runner {
     this.child.kill(signal);
   }
 
-  getJSON(): object {
+  getJSON(): RunnerJson {
     return {
-      'id': this.cog.id,
-      'type': this.cog.type,
-      'pid': this.pid(),
-      'cwd': this.cog.cwd,
-      'host': this.cog.host,
-      'port': this.cog.port,
-      'tags': this.cog.tags,
-      'description': this.cog.description,
-      'run': this.cog.run,
-      'status': this.status,
-      'exitCode': this.exitCode,
-      'args': this.cog.args
+      id: this.cog.id,
+      type: this.cog.type,
+      pid: this.pid(),
+      cwd: this.cog.cwd,
+      host: this.cog.host,
+      port: this.cog.port,
+      tags: this.cog.tags,
+      description: this.cog.description,
+      run: this.cog.run,
+      status: this.status,
+      exitCode: this.exitCode,
+      args: this.cog.args
     };
   }
 

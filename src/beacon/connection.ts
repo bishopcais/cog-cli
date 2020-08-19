@@ -3,9 +3,21 @@
 import { EventEmitter } from 'events';
 import config from '../config';
 import * as socketIo from 'socket.io-client';
-import { getInterfaces } from './helpers';
+import { getInterfaces, NetworkInterfaceInfo } from './helpers';
 import { stringify as queryStringify } from 'querystring';
 import os from 'os';
+
+interface ConnectionJson {
+  user?: string;
+  pid: number;
+  platform: string;
+  interfaces: NetworkInterfaceInfo[];
+  username?: string;
+  key?: string;
+  cpus: os.CpuInfo[];
+  memory: number;
+  hostname: string;
+}
 
 export default class Connection extends EventEmitter {
   remote: null | SocketIOClient.Socket;
@@ -85,20 +97,19 @@ export default class Connection extends EventEmitter {
     }
   }
 
-  getJSON(): object {
+  getJSON(): ConnectionJson {
     const cfg = config.getCfg();
 
     return {
-      'user': process.env.USER,
-      'pid': process.pid,
-      'platform': process.platform,
-      'interfaces': getInterfaces(),
-      'username': cfg.username,
-      'key': cfg.key,
-      'cogs': [],
-      'cpus': os.cpus(),
-      'memory': os.totalmem(),
-      'hostname': os.hostname()
+      user: process.env.USER,
+      pid: process.pid,
+      platform: process.platform,
+      interfaces: getInterfaces(),
+      username: cfg.username,
+      key: cfg.key,
+      cpus: os.cpus(),
+      memory: os.totalmem(),
+      hostname: os.hostname()
     };
   }
 
