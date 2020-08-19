@@ -3,7 +3,11 @@
 ## v2.0.0
 
 * Rewrite into typescript
-* Drop `crun` bin name
+* Deprecate `crun` command
+* Add internal clear command to clear cog output cache
+* Fix crash if receiving invalid signal
+* Output to console.error on uncaught exceptions
+* Make config output more table like to improve readability
 
 ## v1.4.0
 
