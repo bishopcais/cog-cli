@@ -156,12 +156,15 @@ async function runFileFunction(func: Function, file: string, cmd: program.Comman
       if (files.length === 0) {
         return console.error('No cogs found');
       }
-      for (const file of files) {
+
+      for (let i = 0; i < files.length; i++) {
         try {
           func(loadCogFile(file));
-          // Brief sleep to let previous cog finish loading
-          // before moving onto the next one
-          await sleep();
+          if (i < (files.length - 1)) {
+            // Brief sleep to let previous cog finish loading
+            // before moving onto the next one
+            await sleep();
+          }
         }
         catch (err) {
           console.error(err);
@@ -188,20 +191,22 @@ program.command('reload [file]')
     runFileFunction(bridge.reload, file, cmd);
   });
 
-async function runCogFunction(func: Function, cog_id: string, cmd: program.Command): Promise<void> {
+async function runCogFunction(func: Function, cogId: string, cmd: program.Command): Promise<void> {
   bridge.ping(async (connected) => {
     if (!connected) {
       return;
     }
     try {
-      const cog_ids = await getCogIds(cog_id, cmd);
-      if (cog_ids.length === 0) {
+      const cogIds = await getCogIds(cogId, cmd);
+      if (cogIds.length === 0) {
         return console.error('No cogs specified');
       }
-      for (const cog_id of cog_ids) {
+      for (let i = 0; i < cogIds.length; i++) {
         try {
-          func(cog_id);
-          await sleep();
+          func(cogIds[i]);
+          if (i < (cogIds.length - 1)) {
+            await sleep();
+          }
         }
         catch (err) {
           console.error(err);
