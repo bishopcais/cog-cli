@@ -107,9 +107,8 @@ export default class Beacon {
       return;
     }
 
-    const action_name = action.action.toLowerCase();
-
-    if (action_name === 'watch') {
+    const actionName = action.action.toLowerCase();
+    if (actionName === 'watch') {
       if (action.watching) {
         this.startWatching(cog);
       }
@@ -117,17 +116,21 @@ export default class Beacon {
         this.stopWatching(cog);
       }
     }
-    else if (action_name === 'stop') {
+    else if (actionName === 'clear') {
+      cog.runner.cache = [];
+      connection.remoteEmit('clear', {cogId: cog.id});
+    }
+    else if (actionName === 'stop') {
       cog.runner.stop();
     }
-    else if (action_name === 'run') {
+    else if (actionName === 'run') {
       cog.runner.run();
     }
-    else if (action_name === 'playback') {
+    else if (actionName === 'playback') {
       connection.remoteEmit('a playback', cog.runner.cache);
     }
     else {
-      const signal = action_name.toUpperCase();
+      const signal = actionName.toUpperCase();
       if (!validSignal(signal)) {
         console.error(`invalid signal sent: ${signal}`);
         return;
