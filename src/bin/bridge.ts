@@ -13,15 +13,17 @@ interface RequestSignal {
 
 function launchDaemon(): void {
   const log = fs.openSync(config.paths.logFile, 'a');
-  const child = spawn(process.execPath || 'node', [
-    path.join(path.dirname(fs.realpathSync(__filename)), '../daemon/daemon.js')
-  ], {
-    cwd: process.cwd(),
-    detached: true,
-    stdio: ['ipc', log, log]
-  });
+  const child = spawn(
+    process.execPath || 'node',
+    [path.join(path.dirname(fs.realpathSync(__filename)), '../daemon/daemon.js')],
+    {
+      cwd: process.cwd(),
+      detached: true,
+      stdio: ['ipc', log, log],
+    },
+  );
 
-  child.once('message', (msg) => {
+  child.once('message', (msg: {error?: {code?: string}, listening: boolean}) => {
     child.disconnect();
     if (msg.error) {
       let message = 'Unexpected Error';
@@ -91,24 +93,24 @@ export = {
     request({ 'action': 'reload', 'cog': cog });
   },
 
-  start: (cog_id: string): void => {
-    request({ 'action': 'start', cogId: cog_id });
+  start: (cogId: string): void => {
+    request({ 'action': 'start', cogId });
   },
 
-  stop: (cog_id: string): void => {
-    request({ 'action': 'stop', cogId: cog_id });
+  stop: (cogId: string): void => {
+    request({ 'action': 'stop', cogId });
   },
 
-  unload: (cog_id: string): void => {
-    request({ 'action': 'unload', cogId: cog_id });
+  unload: (cogId: string): void => {
+    request({ 'action': 'unload', cogId });
   },
 
-  status: (cog_id: string): void => {
-    request({ 'action': 'status', cogId: cog_id });
+  status: (cogId: string): void => {
+    request({ 'action': 'status', cogId });
   },
 
-  output: (cog_id: string): void => {
-    request({ 'action': 'output', cogId: cog_id });
+  output: (cogId: string): void => {
+    request({ 'action': 'output', cogId });
   },
 
   ping: (callback: (connected: boolean) => void): void => {
@@ -134,5 +136,5 @@ export = {
 
   quit: (): void => {
     request({ 'action': 'quit' });
-  }
+  },
 };

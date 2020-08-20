@@ -12,7 +12,7 @@ export default interface Cog {
   host?: string;
   port?: number;
   log?: string;
-  "path+"?: string;
+  'path+'?: string;
   env: {[key: string]: string};
   cwd: string;
   runner: Runner;

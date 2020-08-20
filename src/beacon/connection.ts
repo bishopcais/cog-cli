@@ -1,5 +1,3 @@
-'use strict';
-
 import { EventEmitter } from 'events';
 import config from '../config';
 import * as socketIo from 'socket.io-client';
@@ -20,35 +18,38 @@ interface ConnectionJson {
 }
 
 export default class Connection extends EventEmitter {
-  remote: null | SocketIOClient.Socket;
-  url: string;
-  reportUrl: string;
-  handlers: {[key: string]: Function};
+  public remote: null | SocketIOClient.Socket;
 
-  constructor(url: string) {
+  public url: string;
+
+  private reportUrl: string;
+
+  private handlers: {[key: string]: Function}; // eslint-disable-line @typescript-eslint/ban-types
+
+  public constructor(url: string) {
     super();
     this.remote = null;
 
     this.url = url;
-    this.reportUrl = this.url + '/runner';
+    this.reportUrl = `${this.url}/runner`;
 
     this.handlers = {};
   }
 
-  clear(): void {
+  private clear(): void {
     if (this.remote) {
       for (const handler in this.handlers) {
         try {
           this.remote.removeListener(handler, this.handlers[handler]);
         }
         catch (err) {
-          console.error(`Could not removeListener for ${handler} - ${err}`);
+          console.error(`Could not removeListener for ${handler} - ${(err as string)}`);
         }
       }
     }
   }
 
-  connect(cb: (err?: string) => void): void {
+  public connect(cb: (err?: string) => void): void {
     if (this.remote && this.remote.connected) {
       return cb();
     }
@@ -57,8 +58,8 @@ export default class Connection extends EventEmitter {
       this.remote = socketIo.connect(this.reportUrl, {
         autoConnect: false,
         query: queryStringify({
-          info: JSON.stringify(this.getJSON())
-        })
+          info: JSON.stringify(this.getJSON()),
+        }),
       });
     }
 
@@ -81,7 +82,7 @@ export default class Connection extends EventEmitter {
         this.remote.close();
         this.remote = null;
       }
-      cb('Connection error - ' + err);
+      cb(`Connection error - ${err.toString()}`);
     };
 
     this.remote.on('connect', this.handlers.onConnect);
@@ -91,13 +92,13 @@ export default class Connection extends EventEmitter {
     this.remote.connect();
   }
 
-  remoteEmit(type: string, arg: any): void {
+  public remoteEmit(type: string, arg: unknown): void {
     if (this.remote) {
       this.remote.emit(type, arg);
     }
   }
 
-  getJSON(): ConnectionJson {
+  public getJSON(): ConnectionJson {
     const cfg = config.getCfg();
 
     return {
@@ -109,11 +110,11 @@ export default class Connection extends EventEmitter {
       key: cfg.key,
       cpus: os.cpus(),
       memory: os.totalmem(),
-      hostname: os.hostname()
+      hostname: os.hostname(),
     };
   }
 
-  destroy(): void {
+  public destroy(): void {
     if (this.remote) {
       this.remote.close();
       this.remote = null;

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import net from 'net';
+import Cog from '../cog';
 import config from '../config';
 import Beacon from '../beacon/beacon';
 import { sleep } from '../util';
@@ -7,15 +8,15 @@ import { sleep } from '../util';
 const beacon = new Beacon();
 
 function beginStreaming(socket: net.Socket, id: string): void {
-  const i = id ? ':' + id : '';
+  const i = id ? `:${id}` : '';
   const fn = socket.write.bind(socket);
 
-  beacon.on('stdout' + i, fn);
-  beacon.on('stderr' + i, fn);
+  beacon.on(`stdout${i}`, fn);
+  beacon.on(`stderr${i}`, fn);
 
   socket.on('end', () => {
-    beacon.removeListener('stdout' + i, fn);
-    beacon.removeListener('stderr' + i, fn);
+    beacon.removeListener(`stdout${i}`, fn);
+    beacon.removeListener(`stderr${i}`, fn);
   });
 }
 
@@ -29,17 +30,30 @@ async function quitDaemon(): Promise<string> {
   return message;
 }
 
-function killDaemon(): void {
-  quitDaemon();
-  process.exit();
+async function killDaemon(): Promise<void> {
+  await quitDaemon().then(() => {
+    process.exit();
+  });
 }
+
+interface DataChunkObject {
+  cogId: string;
+  action: string;
+  cog: Cog,
+}
+
+type DataChunk = 'ping' | DataChunkObject;
 
 const server = net.createServer((socket) => {
   socket.on('data', (chunk) => {
-    const data = JSON.parse(chunk.toString());
-    const cogId = data.cogId;
+    const data = JSON.parse(chunk.toString()) as DataChunk;
 
-    if (data === 'ping' || data.action === 'ping') {
+    if (data === 'ping') {
+      return socket.end('pong');
+    }
+
+    const cogId = data.cogId;
+    if (data.action === 'ping') {
       socket.end('pong');
     }
     else if (!data.action) {
@@ -50,12 +64,12 @@ const server = net.createServer((socket) => {
     }
     else if (data.action === 'load') {
       beacon.load(data.cog, (err) => {
-        socket.end(`${data.cog.id} - ${err || 'Cog loaded.'}\n`);
+        socket.end(`${data.cogId} - ${err || 'Cog loaded.'}\n`);
       });
     }
     else if (data.action === 'reload') {
       beacon.reload(data.cog, (err?: string): void => {
-        socket.end(`${data.cog.id} - ${err || 'Cog reloaded.'}\n`);
+        socket.end(`${data.cogId} - ${err || 'Cog reloaded.'}\n`);
       });
     }
     else if (data.action === 'start') {
@@ -107,12 +121,12 @@ server.on('listening', (): void => {
   console.log(`${Date()}. Daemon Launched. Listening to ${config.port}`);
 });
 
-process.on('SIGINT', () => killDaemon());
-process.on('SIGTERM', () => killDaemon());
+process.on('SIGINT', () => void killDaemon());
+process.on('SIGTERM', () => void killDaemon());
 process.on('uncaughtException', (err) => {
   console.error('-- caught exception --');
   console.error(err);
-  killDaemon();
+  void killDaemon();
 });
 
 if (fs.existsSync(config.port)) {

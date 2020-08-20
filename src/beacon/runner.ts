@@ -1,5 +1,3 @@
-'use strict';
-
 import fs from 'fs';
 import path from 'path';
 import { spawn, ChildProcess } from 'child_process';
@@ -27,18 +25,24 @@ interface RunnerJson {
 }
 
 export default class Runner {
-  cog: Cog;
-  cogId: string;
-  emitter: EventEmitter;
-  cache: {
+  public cog: Cog;
+
+  public cogId: string;
+
+  private emitter: EventEmitter;
+
+  public cache: {
     type: string;
     data: string;
   }[];
-  child?: ChildProcess;
-  status: 'running' | 'exit';
-  exitCode: number;
 
-  constructor(cog: Cog) {
+  private child?: ChildProcess;
+
+  public status: 'running' | 'exit';
+
+  public exitCode: number;
+
+  public constructor(cog: Cog) {
     this.cog = cog;
     this.cogId = cog.id;
     this.emitter = new EventEmitter();
@@ -49,7 +53,7 @@ export default class Runner {
     this.exitCode = 0;
   }
 
-  run(next?: (err?: string) => void): void {
+  public run(next?: (err?: string) => void): void {
     const env = _.extend({}, this.cog.env || {}, process.env, { PWD: this.cog.cwd });
 
     if (this.cog['path+']) {
@@ -60,7 +64,7 @@ export default class Runner {
       cwd: this.cog.cwd,
       env: env,
       windowsHide: true,
-      shell: process.platform === 'win32'
+      shell: process.platform === 'win32',
     });
 
     if (this.cog.log) {
@@ -83,7 +87,7 @@ export default class Runner {
     child.on('error', (err) => {
       // TODO: log this somewhere?
       this.addToCache('stderr', 'There was a problem spawning a process for this cog:\n');
-      this.addToCache('stderr', err + '\n');
+      this.addToCache('stderr', `${err.toString()}\n`);
       this.addToCache('stderr', 'Do not bother trying to run this again until this resolved');
       this.emit('stderr', err);
     });
@@ -113,11 +117,11 @@ export default class Runner {
     this.emit('start', this.child.pid);
   }
 
-  pid(): number {
+  public pid(): number {
     return (this.child) ? this.child.pid: -1;
   }
 
-  stop(next?: () => void): void {
+  public stop(next?: () => void): void {
     next = next || ((): void => {
       // do nothing
     });
@@ -128,7 +132,7 @@ export default class Runner {
     this.child.kill();
   }
 
-  sendSignal(signal: NodeJS.Signals, next?: () => void): void {
+  public sendSignal(signal: NodeJS.Signals, next?: () => void): void {
     next = next || ((): void => {
       // do nothing
     });
@@ -142,7 +146,7 @@ export default class Runner {
     this.child.kill(signal);
   }
 
-  getJSON(): RunnerJson {
+  public getJSON(): RunnerJson {
     return {
       id: this.cog.id,
       type: this.cog.type,
@@ -155,22 +159,22 @@ export default class Runner {
       run: this.cog.run,
       status: this.status,
       exitCode: this.exitCode,
-      args: this.cog.args
+      args: this.cog.args,
     };
   }
 
-  on(type: string, listener: (...args: any[]) => void): void {
+  public on(type: string, listener: (...args: unknown[]) => void): void {
     this.emitter.on(type, listener);
   }
 
-  emit(type: string, ...data: any[]): void {
+  public emit(type: string, ...data: unknown[]): void {
     this.emitter.emit(type, data);
   }
 
-  addToCache(type: string, data: string | Buffer): void {
+  public addToCache(type: string, data: string | Buffer): void {
     this.cache.push({
       type: type,
-      data: data.toString()
+      data: data.toString(),
     });
 
     if (this.cache.length > CACHE_LIMIT) {
@@ -178,7 +182,7 @@ export default class Runner {
     }
   }
 
-  getStat(cb: (err: string | null, stat?: {memory: number; cpu: number}) => void): void {
+  public getStat(cb: (err: string | null, stat?: {memory: number; cpu: number}) => void): void {
     if (!this.child || !this.child.pid || this.status !== 'running') {
       return cb(null, {memory: 0, cpu: 0});
     }
@@ -190,7 +194,7 @@ export default class Runner {
 
       return cb(null, {
         memory: res.memory,
-        cpu: res.cpu
+        cpu: res.cpu,
       });
     });
   }

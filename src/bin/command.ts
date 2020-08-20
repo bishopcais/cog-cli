@@ -11,17 +11,17 @@ import { ConfigJson } from '../types';
 
 let version;
 try {
-  version = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), {encoding: 'utf8'})).version;
+  version = (JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), {encoding: 'utf8'})) as {version: string}).version;
 }
 catch (e) {
-  version = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), {encoding: 'utf8'})).version;
+  version = (JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), {encoding: 'utf8'})) as {version: string}).version;
 }
 program.version(version, '-v, --version');
 
 function loadCogFile(file: string): Cog {
-  let cog;
+  let cog: Cog;
   try {
-    cog = JSON.parse(fs.readFileSync(file, {encoding: 'utf8'}));
+    cog = (JSON.parse(fs.readFileSync(file, {encoding: 'utf8'})) as Cog);
   }
   catch (err) {
     throw new Error(`Error loading and parsing ${file}`);
@@ -44,15 +44,15 @@ function loadCogFile(file: string): Cog {
     }
     else {
       // In case there are no public IP addresses, just default to localhost
-      const ip_address = getIP();
-      cog.host = (ip_address) ? 'http://' + ip_address : 'http://localhost';
+      const ipAddress = getIP();
+      cog.host = (ipAddress) ? `http://${ipAddress}` : 'http://localhost';
     }
   }
 
   // Make sure host starts with http protocol
   const pattern = /^https?:\/\//;
   if (cog.host && !pattern.test(cog.host)) {
-    cog.host = 'http://' + cog.host;
+    cog.host = `http://${cog.host}`;
   }
 
   // Set default watcher URL
@@ -60,19 +60,21 @@ function loadCogFile(file: string): Cog {
 
   if (!cog.run) {
     if (fs.existsSync(path.resolve(cog.cwd, 'package.json'))) {
-      const package_json = JSON.parse(
-        fs.readFileSync(path.resolve(cog.cwd, 'package.json'), {encoding: 'utf-8'})
-      );
-      if (package_json.main) {
+      const packageJson = JSON.parse(fs.readFileSync(
+        path.resolve(cog.cwd, 'package.json'),
+        {encoding: 'utf-8'},
+      )) as {main?: string};
+
+      if (packageJson.main) {
         cog.run = 'node';
-        cog.args = [package_json.main];
+        cog.args = [packageJson.main];
       }
     }
   }
   return cog;
 }
 
-async function getFiles(file: string, cmd: program.Command): Promise<string[]> {
+function getFiles(file: string, cmd: program.Command): string[] {
   const files = [];
   if (!fs.existsSync(file)) {
     throw new Error(`${file} - file not found`);
@@ -94,9 +96,9 @@ async function getFiles(file: string, cmd: program.Command): Promise<string[]> {
           if (!fs.lstatSync(current).isDirectory()) {
             continue;
           }
-          const cog_file = path.join(current, 'cog.json');
-          if (fs.existsSync(cog_file)) {
-            files.push(path.resolve(cog_file));
+          const cogFile = path.join(current, 'cog.json');
+          if (fs.existsSync(cogFile)) {
+            files.push(path.resolve(cogFile));
           }
           else {
             dirs.push(current);
@@ -111,16 +113,16 @@ async function getFiles(file: string, cmd: program.Command): Promise<string[]> {
   return files;
 }
 
-async function getCogIds(cog_id: string, cmd: program.Command): Promise<string[]> {
-  const cog_ids = [];
-  if (fs.existsSync(cog_id)) {
+function getCogIds(cogId: string, cmd: program.Command): string[] {
+  const cogIds = [];
+  if (fs.existsSync(cogId)) {
     cmd.file = true;
   }
   if (cmd.file || cmd.recursive) {
-    const files = await getFiles(cog_id, cmd);
+    const files = getFiles(cogId, cmd);
     for (const file of files) {
       try {
-        cog_ids.push(loadCogFile(file).id);
+        cogIds.push(loadCogFile(file).id);
       }
       catch (err) {
         console.error(err);
@@ -128,9 +130,9 @@ async function getCogIds(cog_id: string, cmd: program.Command): Promise<string[]
     }
   }
   else {
-    cog_ids.push(cog_id);
+    cogIds.push(cogId);
   }
-  return cog_ids;
+  return cogIds;
 }
 
 for (const arg of process.argv) {
@@ -143,8 +145,24 @@ program.command('launch')
   .description('Launches daemon.')
   .action(bridge.launch);
 
-async function runFileFunction(func: Function, file: string, cmd: program.Command): Promise<void> {
-  bridge.ping(async (connected) => {
+async function internalRunFileFunction(files: string[], func: (cog: Cog) => void): Promise<void> {
+  for (let i = 0; i < files.length; i++) {
+    try {
+      func(loadCogFile(files[i]));
+      if (i < (files.length - 1)) {
+        // Brief sleep to let previous cog finish loading
+        // before moving onto the next one
+        await sleep();
+      }
+    }
+    catch (err) {
+      console.error(err);
+    }
+  }
+}
+
+function runFileFunction(func: (cog: Cog) => void, file: string, cmd: program.Command): void {
+  bridge.ping((connected: boolean) => {
     if (!connected) {
       return;
     }
@@ -152,24 +170,16 @@ async function runFileFunction(func: Function, file: string, cmd: program.Comman
       file = 'cog.json';
     }
     try {
-      const files = await getFiles(file, cmd);
+      const files = getFiles(file, cmd);
       if (files.length === 0) {
-        return console.error('No cogs found');
+        console.error('No cogs found');
+        return;
       }
 
-      for (let i = 0; i < files.length; i++) {
-        try {
-          func(loadCogFile(file));
-          if (i < (files.length - 1)) {
-            // Brief sleep to let previous cog finish loading
-            // before moving onto the next one
-            await sleep();
-          }
-        }
-        catch (err) {
-          console.error(err);
-        }
-      }
+      new Promise((resolve) => {
+        internalRunFileFunction(files, func).then(() => resolve()).catch((err) => console.error(err));
+      }).catch((err) => console.error(err));
+
     }
     catch (err) {
       console.error(err);
@@ -191,27 +201,33 @@ program.command('reload [file]')
     runFileFunction(bridge.reload, file, cmd);
   });
 
-async function runCogFunction(func: Function, cogId: string, cmd: program.Command): Promise<void> {
-  bridge.ping(async (connected) => {
+async function runFunc(cogIds: string[], func: (cogId: string) => void): Promise<void> {
+  for (let i = 0; i < cogIds.length; i++) {
+    try {
+      func(cogIds[i]);
+      if (i < (cogIds.length - 1)) {
+        await sleep();
+      }
+    }
+    catch (err) {
+      console.error(err);
+    }
+  }
+}
+
+function runCogFunction(func: (cogId: string) => void, cogId: string, cmd: program.Command): void {
+  bridge.ping((connected) => {
     if (!connected) {
       return;
     }
     try {
-      const cogIds = await getCogIds(cogId, cmd);
+      const cogIds = getCogIds(cogId, cmd);
       if (cogIds.length === 0) {
         return console.error('No cogs specified');
       }
-      for (let i = 0; i < cogIds.length; i++) {
-        try {
-          func(cogIds[i]);
-          if (i < (cogIds.length - 1)) {
-            await sleep();
-          }
-        }
-        catch (err) {
-          console.error(err);
-        }
-      }
+      new Promise((resolve) => {
+        runFunc(cogIds, func).then(() => resolve()).catch((err) => console.error(err));
+      }).catch((err) => console.error(err));
     }
     catch (err) {
       console.error(err);
@@ -220,38 +236,38 @@ async function runCogFunction(func: Function, cogId: string, cmd: program.Comman
 }
 
 program.command('start <cog_id|path>')
-  .description(`Start a stopped cog.`)
+  .description('Start a stopped cog.')
   .option('-r, --recursive', 'Recursively scan path if directory for cog.json files')
-  .action((cog_id: string, cmd: program.Command) => {
-    runCogFunction(bridge.start, cog_id, cmd);
+  .action((cogId: string, cmd: program.Command) => {
+    runCogFunction(bridge.start, cogId, cmd);
   });
 
 program.command('stop <cog_id|pathh>')
   .description('Stop a running cog.')
   .option('-r, --recursive', 'Recursively scan path if directory for cog.json files')
-  .action((cog_id: string, cmd: program.Command) => {
-    runCogFunction(bridge.stop, cog_id, cmd);
+  .action((cogId: string, cmd: program.Command) => {
+    runCogFunction(bridge.stop, cogId, cmd);
   });
 
 program.command('unload <cog_id|path>')
   .option('-r, --recursive', 'Recursively scan path if directory for cog.json files')
   .alias('remove')
-  .description(`Unload a stopped cog.`)
-  .action((cog_id: string, cmd: program.Command) => {
-    runCogFunction(bridge.unload, cog_id, cmd);
+  .description('Unload a stopped cog.')
+  .action((cogId: string, cmd: program.Command) => {
+    runCogFunction(bridge.unload, cogId, cmd);
   });
 
 program
   .command('status [cog_id]')
-  .description(`Show status of all cogs, or details of specified cog.`)
+  .description('Show status of all cogs, or details of specified cog.')
   .action(bridge.status);
 
 program.command('output [cog_id]')
-  .description(`Listen to stdout/stderr output from all cogs or a specified cog.`)
+  .description('Listen to stdout/stderr output from all cogs or a specified cog.')
   .action(bridge.output);
 
 program.command('ip')
-  .description(`Print out the default IP address cog-cli will use.`)
+  .description('Print out the default IP address cog-cli will use.')
   .action(() => {
     const ip = getIP();
     if (ip) {
@@ -263,11 +279,11 @@ program.command('ip')
   });
 
 program.command('quit')
-  .description(`Exit daemon, and terminates all of its cogs.`)
+  .description('Exit daemon, and terminates all of its cogs.')
   .action(bridge.quit);
 
 program.command('config [variable] [value]')
-  .description(`Show or set config variable.`)
+  .description('Show or set config variable.')
   .option('-d, --delete', 'Unset the value for config variable')
   .action((variable: keyof ConfigJson | null, value: string | null, cmd: program.Command) => {
     const cfg = config.getCfg();
@@ -291,12 +307,11 @@ program.command('config [variable] [value]')
     else if (variable && !value) {
       console.log(header);
       if (config.allowedOptions.includes(variable)) {
-        console.log(`${variable.padEnd(8)} | ${cfg[variable]}`);
+        console.log(`${variable.padEnd(8)} | ${cfg[variable] || ''}`);
         return;
       }
-      else {
-        return console.error(`Invalid config variable: ${variable}`);
-      }
+
+      return console.error(`Invalid config variable: ${variable}`);
     }
     else if (value) {
       if (config.allowedOptions.includes(variable)) {
