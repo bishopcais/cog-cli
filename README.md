@@ -6,15 +6,16 @@ also, if you specify a `watcher` in your cog.json will communicate with the Cog 
 which allows you to then control and monitor the cogs remotely via your web browser.
 
 ## Installation
+
+```bash
+npm install @bishopcais/cog-cli
 ```
-git clone https://github.com/CognitiveHorizons/cisl-crun-cli crun-cli
-cd crun-cli
-npm link
-```
+
 (the final command may require `sudo` depending on configuration of OS)
 
 ## Usage
-```
+
+```text
 $ crun --help
 Usage: crun [options] [command]
 
@@ -37,10 +38,12 @@ Commands:
 ```
 
 ## cog.json
+
 cog-cli utilizes a cog.json file to specify the various settings that a cog should use when
 loaded.
 
 An example cog.json file is shown below:
+
 ```json
 {
   "run": "node",
@@ -55,6 +58,7 @@ An example cog.json file is shown below:
   "port": "8888"
 }
 ```
+
 Note: If you leave out the `host` key but specify a `port`, `cog-cli` will automatically fill
 in the `host` value for you using the first non-internal IPv4 address it finds via the
 [os.networkInterfaces](https://nodejs.org/api/os.html#os_os_networkinterfaces) function. You can
