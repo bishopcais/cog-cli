@@ -1,5 +1,5 @@
 {
-  "name": "@cisl/cog-cli",
+  "name": "@bishopcais/cog-cli",
   "version": "2.0.0-dev.1",
   "description": "CLI interface for managing cogs on a given system",
   "author": "Ashwin Hamal",
@@ -48,7 +48,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/cislrpi/cog-cli"
+    "url": "https://github.com/bishopcais/cog-cli"
   },
   "publishConfig": {
     "access": "public"
