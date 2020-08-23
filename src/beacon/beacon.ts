@@ -24,7 +24,7 @@ interface Action {
 export default class Beacon {
   private emitter: EventEmitter;
 
-  private runners: {[id: string]: Runner};
+  public runners: {[id: string]: Runner};
 
   private connections: {[url: string]: Connection};
 
@@ -271,12 +271,13 @@ export default class Beacon {
     return result;
   }
 
-  // Interfaces
-  public on(type: string, listener: (...args: unknown[]) => void): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public on(type: string, listener: (...args: any[]) => void): void {
     this.emitter.on(type, listener);
   }
 
-  public removeListener(type: string, listener: (...args: unknown[]) => void): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public removeListener(type: string, listener: (...args: any[]) => void): void {
     this.emitter.removeListener(type, listener);
   }
 
