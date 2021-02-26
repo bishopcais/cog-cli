@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.0.0
+
+* Rename project to `@bishopcais/cog-cli`
+* Make publicly available on GitHub and through NPM
+
 ## v2.0.0
 
 * Rewrite into typescript
