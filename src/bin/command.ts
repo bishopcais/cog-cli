@@ -141,6 +141,56 @@ for (const arg of process.argv) {
   }
 }
 
+program.command('config [variable] [value]')
+  .description('Show or set config variable.')
+  .option('-d, --delete', 'Unset the value for config variable')
+  .action((variable: keyof ConfigJson | null, value: string | null, cmd: program.Command) => {
+    const cfg = config.getCfg();
+
+    const header = `${'Key'.padEnd(8)} | Value\n${'-'.repeat(16)}`;
+
+    if (cmd.delete === true && !variable) {
+      console.error('must pass variable to delete');
+      return;
+    }
+    else if (cmd.delete === true && variable) {
+      delete cfg[variable];
+    }
+    else if (!variable) {
+      console.log(header);
+      for (const option of config.allowedOptions) {
+        console.log(`${option.padEnd(8)} | ${cfg[option] || ''}`);
+      }
+      return;
+    }
+    else if (variable && !value) {
+      console.log(header);
+      if (config.allowedOptions.includes(variable)) {
+        console.log(`${variable.padEnd(8)} | ${cfg[variable] || ''}`);
+        return;
+      }
+
+      return console.error(`Invalid config variable: ${variable}`);
+    }
+    else if (value) {
+      if (config.allowedOptions.includes(variable)) {
+        cfg[variable] = value;
+      }
+      else {
+        console.error(`Invalid config variable: ${variable}`);
+        return;
+      }
+    }
+    config.saveCfg(cfg, (err) => {
+      if (err) {
+        console.error('Error saving config');
+      }
+      else {
+        console.log('Config updated.');
+      }
+    });
+  });
+
 program.command('launch')
   .description('Launches daemon.')
   .action(bridge.launch);
@@ -281,56 +331,6 @@ program.command('ip')
 program.command('quit')
   .description('Exit daemon, and terminates all of its cogs.')
   .action(bridge.quit);
-
-program.command('config [variable] [value]')
-  .description('Show or set config variable.')
-  .option('-d, --delete', 'Unset the value for config variable')
-  .action((variable: keyof ConfigJson | null, value: string | null, cmd: program.Command) => {
-    const cfg = config.getCfg();
-
-    const header = `${'Key'.padEnd(8)} | Value\n${'-'.repeat(16)}`;
-
-    if (cmd.delete === true && !variable) {
-      console.error('must pass variable to delete');
-      return;
-    }
-    else if (cmd.delete === true && variable) {
-      delete cfg[variable];
-    }
-    else if (!variable) {
-      console.log(header);
-      for (const option of config.allowedOptions) {
-        console.log(`${option.padEnd(8)} | ${cfg[option] || ''}`);
-      }
-      return;
-    }
-    else if (variable && !value) {
-      console.log(header);
-      if (config.allowedOptions.includes(variable)) {
-        console.log(`${variable.padEnd(8)} | ${cfg[variable] || ''}`);
-        return;
-      }
-
-      return console.error(`Invalid config variable: ${variable}`);
-    }
-    else if (value) {
-      if (config.allowedOptions.includes(variable)) {
-        cfg[variable] = value;
-      }
-      else {
-        console.error(`Invalid config variable: ${variable}`);
-        return;
-      }
-    }
-    config.saveCfg(cfg, (err) => {
-      if (err) {
-        console.error('Error saving config');
-      }
-      else {
-        console.log('Config updated.');
-      }
-    });
-  });
 
 program.action(() => {
   console.log('Invalid option.');
