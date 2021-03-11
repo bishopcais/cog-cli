@@ -1,5 +1,8 @@
 # cog-cli
 
+[![npm](https://img.shields.io/npm/v/@bishopcais/cog-cli)](https://npmjs.com/package/@bishopcais/cog-cli)
+[![Test](https://github.com/bishopcais/cog-cli/actions/workflows/test.yml/badge.svg)](https://github.com/bishopcais/cog-cli/actions/workflows/test.yml)
+
 The `cog-cli` is a CLI program that allows you to start up several "cogs" and
 monitor their status without having to create a bunch of terminal windows for each process. It
 also, if you specify a `watcher` in your cog.json will communicate with the Cog Server (`cog-server`)
