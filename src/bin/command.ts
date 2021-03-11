@@ -226,7 +226,7 @@ function runFileFunction(func: (cog: Cog) => void, file: string, cmd: program.Co
         return;
       }
 
-      new Promise((resolve) => {
+      new Promise<void>((resolve) => {
         internalRunFileFunction(files, func).then(() => resolve()).catch((err) => console.error(err));
       }).catch((err) => console.error(err));
 
@@ -275,7 +275,7 @@ function runCogFunction(func: (cogId: string) => void, cogId: string, cmd: progr
       if (cogIds.length === 0) {
         return console.error('No cogs specified');
       }
-      new Promise((resolve) => {
+      new Promise<void>((resolve) => {
         runFunc(cogIds, func).then(() => resolve()).catch((err) => console.error(err));
       }).catch((err) => console.error(err));
     }
