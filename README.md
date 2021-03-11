@@ -16,26 +16,37 @@ npm install @bishopcais/cog-cli
 ## Usage
 
 ```text
-$ crun --help
-Usage: crun [options] [command]
+$ cog --help
+Usage: cog [options] [command]
 
 Options:
-  -V, --version                     output the version number
-  -h, --help                        output usage information
+  -v, --version                          output the version number
+  -h, --help                             output usage information
 
 Commands:
-  launch                            Launches daemon.
-  load [options] [file]             Load and run a cog application.
-  reload [options] [file]           Stop, Unload and load cog again.
-  start [options] <cog_id>          Start a stopped cog.
-  stop [options] <cog_id>           Stop a running cog.
-  unload|remove [options] <cog_id>  Unload a stopped cog.
-  status [cog_id]                   Show status of all cogs, or details of specified cog.
-  output [cog_id]                   Listen to stdout/stderr output from all cogs or a specified cog.
-  ip                                Print out the default IP address cog will use.
-  quit                              Exit daemon, and terminates all of its cogs.
-  config [options]                  Show configuration. 'cog config --h' to learn more
+  config [options] [variable] [value]    Show or set config variable.
+  launch                                 Launches daemon.
+  load [options] [file]                  Load and run a cog application.
+  reload [options] [file]                Stop, unload and load cog again.
+  start [options] <cog_id|path>          Start a stopped cog.
+  stop [options] <cog_id|pathh>          Stop a running cog.
+  unload|remove [options] <cog_id|path>  Unload a stopped cog.
+  status [cog_id]                        Show status of all cogs, or details of specified cog.
+  output [cog_id]                        Listen to stdout/stderr output from all cogs or a specified cog.
+  ip                                     Print out the default IP address cog-cli will use.
+  quit                                   Exit daemon, and terminates all of its cogs.
 ```
+
+Additionally, for each command, you may use `--help` to view additional information, for example `cog config --help`.
+
+## Configuration
+
+For `cog-cli` to function, you must configure it so that it can communicate with [cog-server](https://github.com/bishopcais/cog-server).
+To accomplish this, you will need to run the `cog config` command, setting each value
+appropriately. Using just `cog config` will show all available config variables and
+their current values. The `username` and `key` fields should correspond with the
+values you set for a user within `cog-server`. The `host` value is used as a default
+value to use for `watcher` key/value in the `cog.json` file if it is omitted.
 
 ## cog.json
 
