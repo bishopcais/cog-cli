@@ -1,6 +1,6 @@
 {
   "name": "@bishopcais/cog-cli",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "CLI interface for managing cogs on a given system",
   "author": "Ashwin Hamal",
   "contributors": [
