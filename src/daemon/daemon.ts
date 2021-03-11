@@ -64,12 +64,12 @@ const server = net.createServer((socket) => {
     }
     else if (data.action === 'load') {
       beacon.load(data.cog, (err) => {
-        socket.end(`${data.cogId} - ${err || 'Cog loaded.'}\n`);
+        socket.end(`${data.cog.id} - ${err || 'Cog loaded.'}\n`);
       });
     }
     else if (data.action === 'reload') {
       beacon.reload(data.cog, (err?: string): void => {
-        socket.end(`${data.cogId} - ${err || 'Cog reloaded.'}\n`);
+        socket.end(`${data.cog.id} - ${err || 'Cog reloaded.'}\n`);
       });
     }
     else if (data.action === 'start') {
