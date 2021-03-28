@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.0.1
+
+### Bugfixes
+
+* Fix `undefined` being printed instead of the cog id on `cog load` and `cog reload`
+* Move `config` command to the top of `--help` text
+
 ## v3.0.0
 
 * Rename project to `@bishopcais/cog-cli`
