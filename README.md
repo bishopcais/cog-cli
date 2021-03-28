@@ -11,8 +11,11 @@ which allows you to then control and monitor the cogs remotely via your web brow
 ## Installation
 
 ```bash
-npm install @bishopcais/cog-cli
+npm install -g @bishopcais/cog-cli
 ```
+
+Note: Running this line as-is will automatically pull the latest version down from NPM and install it onto
+your machine.
 
 ## Usage
 
