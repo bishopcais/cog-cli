@@ -14,8 +14,6 @@ which allows you to then control and monitor the cogs remotely via your web brow
 npm install @bishopcais/cog-cli
 ```
 
-(the final command may require `sudo` depending on configuration of OS)
-
 ## Usage
 
 ```text
@@ -41,6 +39,47 @@ Commands:
 ```
 
 Additionally, for each command, you may use `--help` to view additional information, for example `cog config --help`.
+
+### Loading Cogs
+
+When using `cog load` or `cog reload` or `cog unload` functions, the `[file]` argument is optional and if
+omitted, it will default to looking for a `cog.json` file in your current working directory (e.g, equivalent
+to `cog load cog.json`). Alternatively you can pass it a filename and it will load that file from your
+current working directory, e.g. `cog load sample-cog/cog.json`. Finally, if you pass it a directory, it will
+recursively search through the directory, attempting to find a `cog.json` at each additional directory it
+finds. This allows one to load multiple cogs at once, such that if you have the following structure:
+
+```text
+.
+|- sample-cog
+|  |- cog.json
++- sample-cog-2
+|  |- cog.json
+```
+
+By doing `cog load .`, this will under the hood execute `cog load sample-cog/cog.json` and
+`cog load sample-cog/cog.json`. This can be combined with symlinks effectively to create "environments" that `cog-cli`
+can be used to load. For example, assume the following folder structure:
+
+```text
+.
+|- sample-cog
+|  |- cog.json
++- sample-cog-2
+|  |- cog.json
++- sample-cog-3
+|  |- cog.json
++- environments
+|  +- environment-1
+|  |  |- sample-cog -> ../../sample-cog
+|  |  |- sample-cog-2 -> ../../sample-cog-2
+|  +- environment-2
+|  |  |- sample-cog -> ../../sample-cog
+|  |  |- sample-cog-3 -> ../../sample-cog-3
+```
+
+and so you can now effectively do `cog load environments/environment-1` or `cog load environments/environment-2` to spin
+up cogs in different configurations effectively.
 
 ## Configuration
 
