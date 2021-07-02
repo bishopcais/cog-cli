@@ -74,8 +74,12 @@ function request(signal: RequestSignal): void {
       return;
     }
 
+    daemon.on('end', () => {
+      daemon.end();
+    });
+
     daemon.on('data', (data) => {
-      process.stdout.write(data.toString('utf8'));
+      process.stdout.write(data);
     });
 
     daemon.write(JSON.stringify(signal));
@@ -120,6 +124,10 @@ export = {
         callback(false);
         return;
       }
+
+      daemon.on('end', () => {
+        daemon.end();
+      });
 
       daemon.on('data', (data) => {
         if (data.toString() === 'pong') {
