@@ -172,7 +172,7 @@ program.command('start <cog_id|path>')
     runCogFunction(bridge.start, cogId);
   });
 
-program.command('stop <cog_id|pathh>')
+program.command('stop <cog_id|path>')
   .description('Stop a running cog.')
   .action((cogId: string) => {
     runCogFunction(bridge.stop, cogId);

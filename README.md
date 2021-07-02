@@ -33,7 +33,7 @@ Commands:
   load [options] [file]                  Load and run a cog application.
   reload [options] [file]                Stop, unload and load cog again.
   start [options] <cog_id|path>          Start a stopped cog.
-  stop [options] <cog_id|pathh>          Stop a running cog.
+  stop [options] <cog_id|path>           Stop a running cog.
   unload|remove [options] <cog_id|path>  Unload a stopped cog.
   status [cog_id]                        Show status of all cogs, or details of specified cog.
   output [cog_id]                        Listen to stdout/stderr output from all cogs or a specified cog.
@@ -60,8 +60,8 @@ finds. This allows one to load multiple cogs at once, such that if you have the 
 |  |- cog.json
 ```
 
-By doing `cog load .`, this will under the hood execute `cog load sample-cog/cog.json` and
-`cog load sample-cog/cog.json`. This can be combined with symlinks effectively to create "environments" that `cog-cli`
+By doing `cog load .` in the door directory, this will be translated as executing `cog load sample-cog/cog.json` and
+`cog load sample-cog-2/cog.json`. This can be combined with symlinks effectively to create "environments" that `cog-cli`
 can be used to load. For example, assume the following folder structure:
 
 ```text
