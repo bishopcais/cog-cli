@@ -29,7 +29,7 @@ if (process.platform === 'win32') {
 const paths = {
   home: home,
   logFile: path.resolve(home, 'cog.log'),
-  configFile: path.resolve(home, 'config.json')
+  configFile: path.resolve(home, 'config.json'),
 };
 
 const allowedOptions: (keyof ConfigJson)[] = ['username', 'key', 'host'];
@@ -44,12 +44,10 @@ export = {
     if (!fs.existsSync(paths.configFile)) {
       return {};
     }
-    return JSON.parse(
-      fs.readFileSync(paths.configFile, 'utf8')
-    );
+    return JSON.parse(fs.readFileSync(paths.configFile, 'utf8')) as ConfigJson;
   },
 
   saveCfg: (json: ConfigJson, callback: (err: NodeJS.ErrnoException | null) => void): void => {
     fs.writeFile(paths.configFile, JSON.stringify(json), callback);
-  }
+  },
 };

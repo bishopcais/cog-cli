@@ -2,7 +2,7 @@ import _ from 'lodash';
 import { EventEmitter } from 'events';
 import Connection from './connection';
 import Runner from './runner';
-import Cog from '../cog';
+import { Cog } from '../cog';
 import { validSignal } from '../util';
 
 const STAT_REPORT_TIME = 1000;

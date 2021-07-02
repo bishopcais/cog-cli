@@ -3,7 +3,7 @@ import fs = require('fs');
 import path = require('path');
 import {spawn } from 'child_process';
 import config = require('../config');
-import Cog from '../cog';
+import { Cog } from '../cog';
 
 interface RequestSignal {
   action: 'load' | 'reload' | 'start' | 'stop' | 'unload' | 'status' | 'output' | 'quit';

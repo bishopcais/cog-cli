@@ -4,7 +4,7 @@ import { spawn, ChildProcess } from 'child_process';
 import pidusage from 'pidusage';
 import { EventEmitter } from 'events';
 import _ from 'lodash';
-import Cog from '../cog';
+import { Cog } from '../cog';
 import { validSignal } from '../util';
 
 const CACHE_LIMIT = 30;

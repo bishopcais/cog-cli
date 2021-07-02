@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es2018",
     "module": "commonjs",
     "declaration": true,
     "outDir": "./dist",
     "strict": true,
-    "resolveJsonModule": false,
+    "resolveJsonModule": true,
     "esModuleInterop": true
   },
   "include": [
@@ -13,6 +13,5 @@
   ],
   "exclude": [
     "node_modules",
-    "test"
   ]
 }

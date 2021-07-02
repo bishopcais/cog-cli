@@ -1,6 +1,6 @@
 import fs from 'fs';
 import net from 'net';
-import Cog from '../cog';
+import { Cog } from '../cog';
 import config from '../config';
 import Beacon from '../beacon/beacon';
 import { sleep } from '../util';
