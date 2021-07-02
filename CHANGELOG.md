@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.1.0
+
+* Deprecate the `--recursive` flag. All options are recursive naturally now. Flag will be removed in later release.
+* Fix closing the socket connection to daemon server.
+
 ## v3.0.1
 
 ### Bugfixes
