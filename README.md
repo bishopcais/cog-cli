@@ -45,12 +45,10 @@ Additionally, for each command, you may use `--help` to view additional informat
 
 ### Loading Cogs
 
-When using `cog load` or `cog reload` or `cog unload` functions, the `[file]` argument is optional and if
-omitted, it will default to looking for a `cog.json` file in your current working directory (e.g, equivalent
-to `cog load cog.json`). Alternatively you can pass it a filename and it will load that file from your
-current working directory, e.g. `cog load sample-cog/cog.json`. Finally, if you pass it a directory, it will
-recursively search through the directory, attempting to find a `cog.json` at each additional directory it
-finds. This allows one to load multiple cogs at once, such that if you have the following structure:
+When using any of the commands that accept a file path, the command will then recursively search through the path
+(to a depth of 3 folders). For each directory it looks in, if it finds a `cog.json` file, it will return that file
+and stop. Otherwise, it will open all sub-directories, and scan into them, and so on. This allows one to load
+multiple cogs at once, such that if you have the following structure:
 
 ```text
 .
@@ -60,7 +58,7 @@ finds. This allows one to load multiple cogs at once, such that if you have the 
 |  |- cog.json
 ```
 
-By doing `cog load .` in the door directory, this will be translated as executing `cog load sample-cog/cog.json` and
+By doing `cog load .` in the root directory, this will be translated as executing `cog load sample-cog/cog.json` and
 `cog load sample-cog-2/cog.json`. This can be combined with symlinks effectively to create "environments" that `cog-cli`
 can be used to load. For example, assume the following folder structure:
 
@@ -83,6 +81,9 @@ can be used to load. For example, assume the following folder structure:
 
 and so you can now effectively do `cog load environments/environment-1` or `cog load environments/environment-2` to spin
 up cogs in different configurations effectively.
+
+For the `load`, `reload`, and `unload` commands, the path argument is optional, and if omitted, it will default to
+searching for a cog.json file within the current working directory (e.g., equivalent to doing `cog load cog.json`).
 
 ## Configuration
 
