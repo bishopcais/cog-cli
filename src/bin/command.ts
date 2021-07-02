@@ -122,12 +122,14 @@ function runFileFunction(func: (cog: Cog) => void, file: string): void {
 
 program.command('load [file]')
   .description('Load and run a cog application.')
+  .option('-r, --recursive', '[DEPRECATED] does nothing')
   .action((file: string) => {
     runFileFunction(bridge.load, file);
   });
 
 program.command('reload [file]')
   .description('Stop, unload and load cog again.')
+  .option('-r, --recursive', '[DEPRECATED] does nothing')
   .action((file: string) => {
     runFileFunction(bridge.reload, file);
   });
@@ -168,12 +170,14 @@ function runCogFunction(func: (cogId: string) => void, cogId: string): void {
 
 program.command('start <cog_id|path>')
   .description('Start a stopped cog.')
+  .option('-r, --recursive', '[DEPRECATED] does nothing')
   .action((cogId: string) => {
     runCogFunction(bridge.start, cogId);
   });
 
 program.command('stop <cog_id|path>')
   .description('Stop a running cog.')
+  .option('-r, --recursive', '[DEPRECATED] does nothing')
   .action((cogId: string) => {
     runCogFunction(bridge.stop, cogId);
   });
@@ -181,6 +185,7 @@ program.command('stop <cog_id|path>')
 program.command('unload <cog_id|path>')
   .alias('remove')
   .description('Unload a stopped cog.')
+  .option('-r, --recursive', '[DEPRECATED] does nothing')
   .action((cogId: string) => {
     runCogFunction(bridge.unload, cogId);
   });
